@@ -3,9 +3,29 @@ from kagglehub import KaggleDatasetAdapter
 import tomllib
 from IPython.display import display
 import pandera as pa
+from pandera.typing import Series
 
 with open('schema.toml', 'rb') as f: # tomllib exige 'rb' no lugar de 'r' - read apenas
     config = tomllib.load(f)
+
+class AsteroidsMetrics(pa.DataFrameModel):  
+    id: Series[str]
+    spkid: Series[str]
+    full_name: Series[str]
+    pdes: Series[str]
+    name: Series[str]
+    prefix: Series[str]
+    neo: Series[bool]
+    pha: Series[bool]
+    H: Series[float]
+    diameter: Series[float] = pa.Field(gt=0)
+    albedo: Series[float] = pa.Field(gt=0)
+    diameter_sigma: Series[float] = pa.Field(ge=0)
+    
+
+
+
+
 
 columns_rules = config["columns"]
 
