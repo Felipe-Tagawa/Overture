@@ -1,10 +1,9 @@
 FEATURES = [
-    "hp",
-    "attack",
-    "defense",
-    "special_attack",
-    "special_defense",
-    "speed"
+    "a",
+    "e",
+    "i",
+    "om",
+    "w"
 ]
 
-TARGET = "type1"
+TARGET = "moid"
