@@ -1,6 +1,8 @@
-requests
 scikit-learn
 numpy
 pandas
 matplotlib
 tabulate
+Ipython
+kagglehub[pandas-datasets]
+pandera
