@@ -1,43 +1,44 @@
-"""
-Arquivo de requisições do PokéAPI
-"""
+import kagglehub
+from kagglehub import KaggleDatasetAdapter
+import tomllib
+from IPython.display import display
+import pandera as pa
 
-import requests
+with open('schema.toml', 'rb') as f: # tomllib exige 'rb' no lugar de 'r' - read apenas
+    config = tomllib.load(f)
 
-from config import BASE_URL, REQUEST_TIMEOUT
+columns_rules = config["columns"]
 
-def get_pokemon_list(limit: int) -> list[dict]:
-    url = f"{BASE_URL}/pokemon?limit={limit}"
-    response = requests.get(url, timeout=REQUEST_TIMEOUT)
-    response.raise_for_status()
-    return response.json()['results']
+obg_types = {
+    'pdes': str,
+    'name': str,
+    'prefix': str
+}
 
-def get_pokemon_detail(name_or_url: str) -> dict:
+type_map = {
+    "string": pa.String,
+    "float": pa.Float,
+    "integer": pa.Int,
+    "boolean": pa.String # "Y" ou "N"
+}
+
+validation_field= {}
+
+for column_name, properties in columns_rules.items():
+    toml_type = properties["type"]
+    pandera_type = type_map.get(toml_type, pa.String) # Padrão string
     
-    url = name_or_url if name_or_url.startswith("http") else f"{BASE_URL}/pokemon/{name_or_url}"
- 
-    response = requests.get(url, timeout=REQUEST_TIMEOUT)
-    response.raise_for_status()
-    raw = response.json() # Dados Gerais
+    validation_field[column_name] = pa.Column(pandera_type, nullable=True)
 
-    stats = {}
+# Validador do Pandera
+schema_pandera = pa.DataFrameSchema(validation_field)
 
-    for s in raw["stats"]:
-        stats[s["stat"]["name"]] = s["base_stat"]
+initial_types = {'pdes': str, 'name': str, 'prefix': str}
+df = kagglehub.load_dataset(
+    KaggleDatasetAdapter.PANDAS,
+    "sakhawat18/asteroid-dataset",
+    "dataset.csv",
+    dtype=initial_types
+)
 
-    types = []
 
-    for t in raw["types"]:
-        types.append(t["type"]["name"])  # Nome do tipo dentro de raw
-    return {
-        "id": raw["id"],
-        "name": raw["name"],
-        "hp": stats.get("hp"),
-        "attack": stats.get("attack"),
-        "defense": stats.get("defense"),
-        "special-attack": stats.get("special-attack"),
-        "special-defense": stats.get("special-defense"),
-        "speed": stats.get("speed"),
-        "type1": types[0] if len(types) > 0 else None,
-        "type2": types[1] if len(types) > 1 else None,
-    }
