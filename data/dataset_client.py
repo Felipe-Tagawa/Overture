@@ -2,7 +2,7 @@ import kagglehub
 from kagglehub import KaggleDatasetAdapter
 import tomllib
 import pandera.pandas as pa
-from data.config import FEATURES, TARGET
+from data.config import FEATURES, TARGET, EXTRA_FILTER_COLUMNS
 from pathlib import Path
 import numpy as np
 
@@ -22,16 +22,20 @@ type_map = {
     "integer": pa.Int64, # Evitar problemas com nulos
 }
 
+NULLABLE_COLUMNS = {"diameter", "albedo"}
+
 validation_field= {}
 
-for column_name in FEATURES + [TARGET]:
+for column_name in FEATURES + [TARGET] + EXTRA_FILTER_COLUMNS:
     if column_name in column_rules:
         toml_type = column_rules[column_name]["type"]
         pandera_type = type_map.get(toml_type, pa.Float) # Valores reais 
 
         check = [pa.Check.gt(0)] if column_name in {"a", "moid"} else []
 
-        validation_field[column_name] = pa.Column(dtype=pandera_type, checks=check, nullable=False, coerce=True)
+        nullable = column_name in NULLABLE_COLUMNS
+
+        validation_field[column_name] = pa.Column(dtype=pandera_type, checks=check, nullable=nullable, coerce=True)
 
     else:
         print(f"Aviso: Coluna '{column_name}' não foi encontrada no schema.toml")
@@ -61,6 +65,9 @@ except pa.errors.SchemaErrors as e:
 df = df[(df["a"] < 100) & (df["e"] < 0.9)]
 
 # Não há nulos nem duplicados (já testado)
+
+df["diameter"] = df["diameter"].fillna(df["diameter"].median())
+df["albedo"] = df["albedo"].fillna(df["albedo"].median())
 
 df["moid_log"] = np.log1p(df[TARGET])
 

@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
@@ -7,6 +8,7 @@ from data.config import FEATURES, TARGET
 from data.dataset_client import df
 
 X = df[FEATURES]
+X = pd.get_dummies(X, columns=['class'], drop_first=True) # RFR não aceita strings
 y = df["moid_log"]
 y_original = df[TARGET]
 
@@ -22,6 +24,7 @@ X_train, X_test, y_train, y_test, y_orig_train, y_orig_test = train_test_split(
 
 model = RandomForestRegressor(
     n_estimators= 100,
+    verbose=2,
     max_depth=None,
     n_jobs= -1,
     random_state=42
