@@ -2,7 +2,8 @@ scikit-learn
 numpy
 pandas
 matplotlib
-tabulate
-Ipython
 kagglehub[pandas-datasets]
 pandera
+ydata-profiling
+setuptools<81
+pytest
