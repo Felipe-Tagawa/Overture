@@ -7,3 +7,4 @@ pandera
 ydata-profiling
 setuptools<81
 pytest
+xgboost
