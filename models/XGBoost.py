@@ -9,6 +9,7 @@ from data.config import FEATURES, TARGET
 from data.dataset_client import df
 
 X = df[FEATURES]
+X = pd.get_dummies(X, columns=['class'], drop_first=True) # XGBoost também não aceita strings
 y = df["moid_log"]
 y_original = df[TARGET]
 
@@ -54,5 +55,5 @@ importances = dict(zip(FEATURES, model.feature_importances_)) # Criar dicionári
 print("\nImportância das features:")
 
 # '-' para ser decrescente e '[1]' para pegar o valor e não a chave
-for feat, importance in sorted(importances.items,  key=lambda x: -x[1]):
+for feat, importance in sorted(importances.items(),  key=lambda x: -x[1]):
     print(f"{feat}: {importance:.4f}")
