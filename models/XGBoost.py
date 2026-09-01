@@ -9,7 +9,6 @@ from data.config import FEATURES, TARGET
 from data.dataset_client import df
 
 X = df[FEATURES]
-X = pd.get_dummies(X, columns=['class'], drop_first=True) # XGBoost também não aceita strings
 y = df["moid_log"]
 y_original = df[TARGET]
 
@@ -29,7 +28,7 @@ X_train, X_test, y_train, y_test, y_orig_train, y_orig_test = train_test_split(
 def make_model_xgb(
         n_jobs=8,
         verbosity=0,
-        n_estimators=50,
+        n_estimators=100,
         learning_rate=0.1,
         max_depth=6,
         subsample=0.8,
@@ -66,9 +65,11 @@ if __name__ == "__main__":
     print(f"RMSE: {rmse:.5f}")
     print(f"R²: {r2:.5f}")
 
-    importances = dict(zip(FEATURES, model_xgb.feature_importances_)) # Criar dicionário de importância
+    importances = dict(zip(X_train.columns, model_xgb.feature_importances_)) # Criar dicionário de importância
     print("\nImportância das features:")
 
     # '-' para ser decrescente e '[1]' para pegar o valor e não a chave
     for feat, importance in sorted(importances.items(),  key=lambda x: -x[1]):
         print(f"{feat}: {importance:.4f}")
+
+    

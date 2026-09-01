@@ -1,6 +1,6 @@
 import tomllib
 import pandera.pandas as pa
-from data.config import FEATURES, TARGET, EXTRA_FILTER_COLUMNS
+from data.config import FEATURES, TARGET, FINAL_COLUMN, DISPLAY_COLUMNS
 from pathlib import Path
 import numpy as np
 import pandas as pd
@@ -20,13 +20,14 @@ type_map = {
     "string": pa.String,
     "float": pa.Float,
     "integer": pa.Int64, # Evitar problemas com nulos
+    "boolean": pa.BOOL
 }
 
-NULLABLE_COLUMNS = {"diameter", "albedo"}
+NULLABLE_COLUMNS = {"pha", "neo"}
 
 validation_field= {}
 
-for column_name in FEATURES + [TARGET] + EXTRA_FILTER_COLUMNS:
+for column_name in FEATURES + [TARGET] + FINAL_COLUMN + DISPLAY_COLUMNS:
     if column_name in column_rules:
         toml_type = column_rules[column_name]["type"]
         pandera_type = type_map.get(toml_type, pa.Float) # Valores reais 
@@ -56,6 +57,10 @@ def download_n_validate():
     pandas_kwargs={"low_memory": False}  # Análise completa dos tipos das colunas
     )
 
+    for bool_col in ("pha", "neo"):
+        if bool_col in raw_df.columns:
+            raw_df[bool_col] = raw_df[bool_col].map({"Y": True, "N": False})
+
     try:
         validated = schema_pandera.validate(raw_df, lazy=True)
     except pa.errors.SchemaErrors as e:
@@ -73,13 +78,11 @@ else:
     CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)
     df.to_parquet(CACHE_PATH)
     print(f"Dataset baixado e salvo em cache: {CACHE_PATH}")
+
 # Remove outliers extremos (cometas quase-parabólicos)
 df = df[(df["a"] < 5) & (df["e"] < 0.9)]
 
 # Não há nulos nem duplicados (já testado)
-
-df["diameter"] = df["diameter"].fillna(df["diameter"].median())
-df["albedo"] = df["albedo"].fillna(df["albedo"].median())
 
 df["moid_log"] = np.log1p(df[TARGET])
 
