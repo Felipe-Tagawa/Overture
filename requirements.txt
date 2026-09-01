@@ -9,4 +9,5 @@ setuptools<81
 pytest
 xgboost
 joblib
+pyarrow
 
