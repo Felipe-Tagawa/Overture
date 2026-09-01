@@ -20,33 +20,38 @@ X_train, X_test, y_train, y_test, y_orig_train, y_orig_test = train_test_split(
     random_state=42
 )
 
-# https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestRegressor.html
+def make_model_rf(n_jobs=8, verbose=0, max_depth=20, min_samples_leaf=2, n_estimators=50) -> RandomForestRegressor:
 
-model = RandomForestRegressor(
-    n_estimators= 100,
-    verbose=2,
-    max_depth=None,
-    n_jobs= -1,
-    random_state=42
-)
+    return RandomForestRegressor(
+        n_estimators=n_estimators,
+        verbose=verbose,
+        max_depth=max_depth,
+        min_samples_leaf=min_samples_leaf,
+        n_jobs=n_jobs,
+        random_state=42
+    )
 
-model.fit(X_train, y_train)
+model_rf = make_model_rf(verbose=2)
 
-y_pred_log = model.predict(X_test)
-y_pred = np.expm1(y_pred_log) # Reverter log1p
+if __name__ == "__main__":
+    print("Treinando modelo isoladamente no RFR.py...")
+    model_rf.fit(X_train, y_train)
 
-mae = mean_absolute_error(y_orig_test, y_pred)
-rmse = np.sqrt(mean_squared_error(y_orig_test, y_pred))
-r2 = r2_score(y_orig_test, y_pred)
+    y_pred_log = model_rf.predict(X_test)
+    y_pred = np.expm1(y_pred_log) # Reverter log1p
 
-print(f"MAE: {mae:.5f}")
-print(f"RMSE: {rmse:.5f}")
-print(f"R²: {r2:.5f}")
+    mae = mean_absolute_error(y_orig_test, y_pred)
+    rmse = np.sqrt(mean_squared_error(y_orig_test, y_pred))
+    r2 = r2_score(y_orig_test, y_pred)
 
-importances = dict(zip(FEATURES, model.feature_importances_)) # Criar dicionário de importância
-print("\nImportância das features:")
-for feat, imp in sorted(importances.items(), key=lambda x: -x[1]): # '-' para ser decrescente e '[1]' para pegar o valor e não a chave
-    print(f"{feat}: {imp:.4f}")
+    print(f"MAE: {mae:.5f}")
+    print(f"RMSE: {rmse:.5f}")
+    print(f"R²: {r2:.5f}")
+
+    importances = dict(zip(FEATURES, model_rf.feature_importances_))
+    print("\nImportância das features:")
+    for feat, imp in sorted(importances.items(), key=lambda x: -x[1]):
+        print(f"{feat}: {imp:.4f}")
 
 # Se quiser testar, vai para a raiz: Overture/
 # Depois roda python -m model.RFR, tendo como exemplo esse arquivo aqui.
