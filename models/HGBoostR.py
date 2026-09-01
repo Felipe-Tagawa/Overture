@@ -34,7 +34,7 @@ X_train, X_test, y_train, y_test, y_orig_train, y_orig_test = train_test_split(
 def make_model_hgb(
         n_iter_no_change=10,
         verbose=0,
-        max_iter=100, # equivalente a n_estimators no XGBoost
+        max_iter=300, # equivalente a n_estimators no XGBoost (obs: numero de 300 utilizado devido ao early stopping)   
         learning_rate=0.1,
         max_depth=6,
         max_leaf_nodes=31, # controle de complexidade principal do HGB (default sklearn)
@@ -85,6 +85,7 @@ if __name__ == "__main__":
         y_test,
         n_repeats=10,
         random_state=42,
+        scoring="r2",
         n_jobs=8,
     )
 
