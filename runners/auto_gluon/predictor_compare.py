@@ -74,8 +74,10 @@ def train_and_evaluate(fit_strategy: str, path: str, num_cpus=16, num_gpus=0, ti
     rmse = np.sqrt(mean_squared_error(y_orig_test, y_pred))
     r2 = r2_score(y_orig_test, y_pred)
 
+    # Extrai o leaderboard detalhado no conjunto de teste
     df_leaderboard = predictor.leaderboard(test_data[FEATURES + [LABEL]], silent=True)
 
+    # Insere as colunas de contexto da execução
     df_leaderboard["fit_strategy"] = fit_strategy
     df_leaderboard["tempo_total_fit_s"] = elapsed
     df_leaderboard["test_mae_ensemble"] = mae
@@ -97,23 +99,34 @@ if __name__ == "__main__":
         path="AutogluonModels/moid_parallel",
     )
 
+    # Consolida os resultados das duas estratégias em um único DataFrame
     df_result = pd.concat([resultado_sequencial, resultado_paralelo], ignore_index=True)
 
+    # Exporta os resultados para CSV e Parquet
     df_result.to_csv("autogluon_comparativo_modelos.csv", index=False)
+    df_result.to_parquet("autogluon_comparativo_modelos.parquet", index=False)
 
     print("\n=== Comparação sequential vs. parallel (fit_strategy) ===")
     for r in (resultado_sequencial, resultado_paralelo):
+        strategy = r["fit_strategy"].iloc[0]
+        tempo = r["tempo_total_fit_s"].iloc[0]
+        mae = r["test_mae_ensemble"].iloc[0]
+        rmse = r["test_rmse_ensemble"].iloc[0]
+        r2 = r["test_r2_ensemble"].iloc[0]
+
         print(
-            f"\n[{r['fit_strategy']}] "
-            f"Tempo: {r['tempo']:.2f}s | "
-            f"MAE: {r['mae']:.5f} | RMSE: {r['rmse']:.5f} | R²: {r['r2']:.5f}"
+            f"\n[{strategy}] "
+            f"Tempo: {tempo:.2f}s | "
+            f"MAE: {mae:.5f} | RMSE: {rmse:.5f} | R²: {r2:.5f}"
         )
 
-    diff = resultado_sequencial["tempo"] - resultado_paralelo["tempo"]
+    t_seq = resultado_sequencial["tempo_total_fit_s"].iloc[0]
+    t_par = resultado_paralelo["tempo_total_fit_s"].iloc[0]
+    diff = t_seq - t_par
     print(f"\nDiferença de tempo (sequential - parallel): {diff:.2f}s")
 
     print("\nLeaderboard (sequential):")
-    print(resultado_sequencial["predictor"].leaderboard(test_data[FEATURES + [LABEL]], silent=True))
+    print(resultado_sequencial)
 
     print("\nLeaderboard (parallel):")
-    print(resultado_paralelo["predictor"].leaderboard(test_data[FEATURES + [LABEL]], silent=True))
+    print(resultado_paralelo)
