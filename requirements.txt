@@ -10,4 +10,4 @@ pytest
 xgboost
 joblib
 pyarrow
-
+autogluon
