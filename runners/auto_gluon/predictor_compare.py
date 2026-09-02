@@ -74,14 +74,15 @@ def train_and_evaluate(fit_strategy: str, path: str, num_cpus=16, num_gpus=0, ti
     rmse = np.sqrt(mean_squared_error(y_orig_test, y_pred))
     r2 = r2_score(y_orig_test, y_pred)
 
-    return {
-        "fit_strategy": fit_strategy,
-        "tempo": elapsed,
-        "mae": mae,
-        "rmse": rmse,
-        "r2": r2,
-        "predictor": predictor,
-    }
+    df_leaderboard = predictor.leaderboard(test_data[FEATURES + [LABEL]], silent=True)
+
+    df_leaderboard["fit_strategy"] = fit_strategy
+    df_leaderboard["tempo_total_fit_s"] = elapsed
+    df_leaderboard["test_mae_ensemble"] = mae
+    df_leaderboard["test_rmse_ensemble"] = rmse
+    df_leaderboard["test_r2_ensemble"] = r2
+
+    return df_leaderboard
 
 
 if __name__ == "__main__":
@@ -95,6 +96,10 @@ if __name__ == "__main__":
         fit_strategy="parallel",
         path="AutogluonModels/moid_parallel",
     )
+
+    df_result = pd.concat([resultado_sequencial, resultado_paralelo], ignore_index=True)
+
+    df_result.to_csv("autogluon_comparativo_modelos.csv", index=False)
 
     print("\n=== Comparação sequential vs. parallel (fit_strategy) ===")
     for r in (resultado_sequencial, resultado_paralelo):
