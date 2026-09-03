@@ -123,6 +123,6 @@ Em todos os casos, mede-se o **tempo total de treino** (`time.perf_counter()`) e
 - **numpy** — operações numéricas
 - **matplotlib** — visualização de gráficos
 - **pyarrow** — leitura/escrita de arquivos Parquet
-- **panderas** — serialização de objetos Python (modelos treinados, resultados)
+- **pandera** — serialização de objetos Python (modelos treinados, resultados)
 - **ydata-profiling** — análise exploratória de dados (EDA)
 - **kagglehub** — download do dataset do Kaggle via API
