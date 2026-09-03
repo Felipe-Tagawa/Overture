@@ -230,3 +230,8 @@ data/cache/
 
 # Ambientes
 .venv*/
+
+# AutoGluon stuff
+AutoGluonModels/
+autogluon_comparativo_modelos.csv
+autogluon_comparativo_modelos.parquet
