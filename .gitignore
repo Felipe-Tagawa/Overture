@@ -233,5 +233,6 @@ data/cache/
 
 # AutoGluon stuff
 AutoGluonModels/
+AutogluonModels/
 autogluon_comparativo_modelos.csv
 autogluon_comparativo_modelos.parquet
