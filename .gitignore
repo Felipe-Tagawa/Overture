@@ -236,3 +236,8 @@ AutoGluonModels/
 AutogluonModels/
 autogluon_comparativo_modelos.csv
 autogluon_comparativo_modelos.parquet
+
+# Ignorar dados binários e pastas de cache/resultados
+src/data/cache/
+*.parquet
+*.csv
