@@ -71,22 +71,36 @@ def train_and_evaluate(
     )
     elapsed = time.perf_counter() - start
 
-    y_pred_log = predictor.predict(test_data[FEATURES])
-    y_pred = np.expm1(y_pred_log)  # Reverter log1p
-
-    mae = mean_absolute_error(y_orig_test, y_pred)
-    rmse = np.sqrt(mean_squared_error(y_orig_test, y_pred))
-    r2 = r2_score(y_orig_test, y_pred)
-
     # Extrai o leaderboard detalhado no conjunto de teste
     df_leaderboard = predictor.leaderboard(test_data[FEATURES + [LABEL]], silent=True)
 
-    # Insere as colunas de contexto da execução
+    mae_per_model = []
+    rmse_per_model = []
+    r2_per_model = []
+
+    for model_name in df_leaderboard["model"]:
+        y_pred_log = predictor.predict(test_data[FEATURES + [LABEL]], model=model_name)
+        y_pred = np.expm1(y_pred_log)
+
+        mae_per_model.append(mean_absolute_error(y_orig_test, y_pred))
+        rmse_per_model.append(np.sqrt(mean_squared_error(y_orig_test, y_pred)))
+        r2_per_model.append(r2_score(y_orig_test, y_pred))
+
+    df_leaderboard["test_mae"] = mae_per_model
+    df_leaderboard["test_rmse"] = rmse_per_model
+    df_leaderboard["test_r2"] = r2_per_model
+
     df_leaderboard["fit_strategy"] = fit_strategy
     df_leaderboard["tempo_total_fit_s"] = elapsed
-    df_leaderboard["test_mae_ensemble"] = mae
-    df_leaderboard["test_rmse_ensemble"] = rmse
-    df_leaderboard["test_r2_ensemble"] = r2
+    df_leaderboard["test_mae_ensemble"] = df_leaderboard.loc[
+        df_leaderboard["model"] == "WeightedEnsemble_L2", "test_mae"
+    ].iloc[0]
+    df_leaderboard["test_rmse_ensemble"] = df_leaderboard.loc[
+        df_leaderboard["model"] == "WeightedEnsemble_L2", "test_rmse"
+    ].iloc[0]
+    df_leaderboard["test_r2_ensemble"] = df_leaderboard.loc[
+        df_leaderboard["model"] == "WeightedEnsemble_L2", "test_r2"
+    ].iloc[0]
 
     return df_leaderboard
 
