@@ -14,6 +14,16 @@ CORES = {"sequential": COR_SEQ, "parallel": COR_PAR}
 NOMES_ESTRATEGIA = {"sequential": "Sequencial", "parallel": "Parallel"}
 ORDEM_ESTRATEGIAS = ["sequential", "parallel"]
 
+# Informações utilizadas para gerar a tabela de leaderboard:
+# Cores usadas só na tabela (independentes da paleta sequential/parallel acima,
+# aqui as cores marcam "linha destaque" vs "linha normal", não estratégia)
+COR_HEADER_TABELA = "#1f2937"
+COR_LINHA_PAR = "#f3f4f6"
+COR_LINHA_IMPAR = "#ffffff"
+COR_MELHOR_LINHA = "#d1fae5"
+
+COLUNAS_TABELA = ["model", "score_test", "score_val", "pred_time_test", "fit_time_marginal", "fit_order"]
+LABELS_TABELA = ["Modelo", "Score (test)", "Score (val)", "Pred. time (s)", "Fit time (s)", "Ordem"]
 
 def carregar_dados(csv_path: Path = CSV_PATH) -> pd.DataFrame:
     """Lê o CSV do benchmark e prepara colunas auxiliares."""
@@ -162,6 +172,67 @@ def grafico_benchmark_final(df: pd.DataFrame) -> go.Figure:
     )
     return fig
 
+def grafico_tabela_leaderboard(df: pd.DataFrame) -> go.Figure:
+    """Gera uma tabela por estratégia (sequential/parallel), lado a lado,
+    destacando o melhor modelo (menor score_test) de cada uma."""
+
+    estrategias = _estrategias_presentes(df)
+ 
+    fig = make_subplots(
+        rows=1, cols=len(estrategias),
+        specs=[[{"type": "table"}] * len(estrategias)],
+        subplot_titles=[f"Leaderboard — {NOMES_ESTRATEGIA.get(e, e)}" for e in estrategias],
+        horizontal_spacing=0.03,
+    )
+ 
+    max_linhas = 0
+ 
+    for col_idx, estrategia in enumerate(estrategias, start=1):
+        subset = df[df["fit_strategy"] == estrategia].copy()
+        subset["score_test_abs"] = subset["score_test"].abs()
+        subset = subset.sort_values("score_test_abs").reset_index(drop=True)
+        max_linhas = max(max_linhas, len(subset))
+ 
+        melhor_pos = subset["score_test_abs"].idxmin()
+ 
+        cores_linha = [
+            COR_MELHOR_LINHA if pos == melhor_pos
+            else (COR_LINHA_PAR if pos % 2 == 0 else COR_LINHA_IMPAR)
+            for pos in subset.index
+        ]
+ 
+        valores = [
+            subset["model"].tolist(),
+            [f"{v:.5f}" for v in subset["score_test"]],
+            [f"{v:.5f}" for v in subset["score_val"]],
+            [f"{v:.3f}" for v in subset["pred_time_test"]],
+            [f"{v:.2f}" for v in subset["fit_time_marginal"]],
+            subset["fit_order"].astype(int).astype(str).tolist(),
+        ]
+ 
+        fig.add_trace(go.Table(
+            header=dict(
+                values=LABELS_TABELA,
+                fill_color=COR_HEADER_TABELA,
+                font=dict(color="white", size=12),
+                align="center",
+                height=32,
+            ),
+            cells=dict(
+                values=valores,
+                fill_color=[cores_linha] * len(COLUNAS_TABELA),
+                align="center",
+                height=28,
+                font=dict(size=11),
+            ),
+        ), row=1, col=col_idx)
+ 
+    fig.update_layout(
+        title="Comparação detalhada dos modelos (AutoGluon)",
+        template="plotly_white",
+        height=max(300, 190 + 32 * (max_linhas + 1)), 
+    )
+    return fig
 
 def gerar_html(csv_path: Path = CSV_PATH, caminho_saida: str = "benchmark_overture.html") -> None:
     """Lê o CSV do benchmark e junta os quatro gráficos num único arquivo HTML."""
@@ -172,6 +243,7 @@ def gerar_html(csv_path: Path = CSV_PATH, caminho_saida: str = "benchmark_overtu
         grafico_rmse_por_modelo(df),
         grafico_tempo_por_modelo(df),
         grafico_tradeoff_tempo_rmse(df),
+        grafico_tabela_leaderboard(df)
     ]
 
     with open(caminho_saida, "w", encoding="utf-8") as f:
