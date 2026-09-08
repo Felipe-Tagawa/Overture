@@ -11,3 +11,5 @@ xgboost
 joblib
 pyarrow
 autogluon
+plotly
+autogluon.tabular
