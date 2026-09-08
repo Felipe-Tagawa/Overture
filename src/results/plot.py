@@ -223,7 +223,7 @@ def grafico_tabela_leaderboard(df: pd.DataFrame) -> go.Figure:
                 fill_color=[cores_linha] * len(COLUNAS_TABELA),
                 align="center",
                 height=28,
-                font=dict(size=11),
+                font=dict(size=11),                
             ),
         ), row=1, col=col_idx)
  
@@ -231,6 +231,7 @@ def grafico_tabela_leaderboard(df: pd.DataFrame) -> go.Figure:
         title="Comparação detalhada dos modelos (AutoGluon)",
         template="plotly_white",
         height=max(300, 190 + 32 * (max_linhas + 1)), 
+        width=900 + 900 * (len(estrategias) - 1),
     )
     return fig
 
