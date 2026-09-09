@@ -8,8 +8,8 @@ from src.data.config import RESULTS_PATH
 
 CSV_PATH = RESULTS_PATH / "autogluon_comparative_models.csv"
 
-COR_SEQ = "#4CA5A8"
-COR_PAR = "#F5183D"
+COR_SEQ = "#4CA863"
+COR_PAR = "#F56918"
 CORES = {"sequential": COR_SEQ, "parallel": COR_PAR}
 NOMES_ESTRATEGIA = {"sequential": "Sequencial", "parallel": "Parallel"}
 ORDEM_ESTRATEGIAS = ["sequential", "parallel"]
@@ -166,7 +166,7 @@ def grafico_benchmark_final(df: pd.DataFrame) -> go.Figure:
     ), row=1, col=2)
 
     fig.update_layout(
-        title="Resultado final: Sequencial vs Parallel",
+        title="Resultado final: Sequencial vs Paralelo",
         template="plotly_white",
         height=450,
     )
@@ -235,27 +235,100 @@ def grafico_tabela_leaderboard(df: pd.DataFrame) -> go.Figure:
     )
     return fig
 
+def grafico_evolucao_time_limit(df: pd.DataFrame) -> go.Figure:
+    """Mostra como o tempo total e o MAE do ensemble evoluem conforme o time_limit aumenta,
+    uma linha por estratégia. É o gráfico que responde 'vale a pena dar mais tempo?'."""
+
+    resumo = (
+        df.groupby(["fit_strategy", "time_limit"])
+        .agg(
+            tempo=("tempo_total_fit_s", "first"),
+            mae=("test_mae_ensemble", "first"),
+        )
+        .reset_index()
+        .sort_values("time_limit")
+    )
+
+    fig = make_subplots(
+        rows=1, cols=2,
+        subplot_titles=("Tempo total x Time Limit", "MAE do ensemble x Time Limit"),
+    )
+
+    for estrategia in _estrategias_presentes(df):
+        sub = resumo[resumo["fit_strategy"] == estrategia]
+        nome = NOMES_ESTRATEGIA.get(estrategia, estrategia)
+        cor = CORES.get(estrategia)
+
+        fig.add_trace(go.Scatter(
+            x=sub["time_limit"], y=sub["tempo"],
+            mode="lines+markers+text",
+            text=[f"{v:.1f}s" for v in sub["tempo"]],
+            textposition="top center",
+            name=nome, legendgroup=estrategia,
+            marker=dict(color=cor, size=10),
+            line=dict(color=cor),
+        ), row=1, col=1)
+
+        fig.add_trace(go.Scatter(
+            x=sub["time_limit"], y=sub["mae"],
+            mode="lines+markers+text",
+            text=[f"{v:.5f}" for v in sub["mae"]],
+            textposition="top center",
+            name=nome, legendgroup=estrategia, showlegend=False,
+            marker=dict(color=cor, size=10),
+            line=dict(color=cor),
+        ), row=1, col=2)
+
+    fig.update_xaxes(title_text="Time limit (s)", row=1, col=1)
+    fig.update_xaxes(title_text="Time limit (s)", row=1, col=2)
+    fig.update_yaxes(title_text="Tempo total (s)", row=1, col=1)
+    fig.update_yaxes(title_text="MAE (teste)", row=1, col=2)
+
+    fig.update_layout(
+        title="Evolução por Time Limit: Sequencial vs Paralelo",
+        template="plotly_white",
+        height=450,
+    )
+    return fig
+
+
 def gerar_html(csv_path: Path = CSV_PATH, caminho_saida: str = "benchmark_overture.html") -> None:
-    """Lê o CSV do benchmark e junta os quatro gráficos num único arquivo HTML."""
+    """Lê o CSV do benchmark e monta o HTML: um resumo geral por time_limit,
+    seguido do detalhamento (RMSE, tempo, trade-off, leaderboard) para cada time_limit."""
     df = carregar_dados(csv_path)
 
-    graficos = [
-        grafico_benchmark_final(df),
-        grafico_rmse_por_modelo(df),
-        grafico_tempo_por_modelo(df),
-        grafico_tradeoff_tempo_rmse(df),
-        grafico_tabela_leaderboard(df)
-    ]
+    time_limits = sorted(df["time_limit"].unique()) if "time_limit" in df.columns else [None]
 
     with open(caminho_saida, "w", encoding="utf-8") as f:
         f.write("<html><head><meta charset='utf-8'>")
-        f.write("<title>Benchmark Overture - Sequencial vs Parallel</title></head><body>")
-        f.write("<h1 style='font-family:sans-serif; text-align:center;'>Benchmark: AutoGluon Sequencial vs Parallel</h1>")
+        f.write("<title>Benchmark Overture - Sequencial vs Paralelo</title></head><body>")
+        f.write("<h1 style='font-family:sans-serif; text-align:center;'>Benchmark: AutoGluon Sequencial vs Paralelo</h1>")
 
-        for i, fig in enumerate(graficos):
-            # só carrega o plotly.js na primeira figura, economiza espaço no arquivo
-            include_js = "cdn" if i == 0 else False
-            f.write(fig.to_html(full_html=False, include_plotlyjs=include_js))
+        primeira_figura = True
+
+        if len(time_limits) > 1:
+            fig_evolucao = grafico_evolucao_time_limit(df)
+            f.write(fig_evolucao.to_html(full_html=False, include_plotlyjs="cdn"))
+            primeira_figura = False
+
+        for tl in time_limits:
+            subset = df[df["time_limit"] == tl] if tl is not None else df
+
+            if tl is not None:
+                f.write(f"<h2 style='font-family:sans-serif; text-align:center; margin-top:60px;'>Time limit: {tl}s</h2>")
+
+            graficos = [
+                grafico_benchmark_final(subset),
+                grafico_rmse_por_modelo(subset),
+                grafico_tempo_por_modelo(subset),
+                grafico_tradeoff_tempo_rmse(subset),
+                grafico_tabela_leaderboard(subset),
+            ]
+
+            for fig in graficos:
+                include_js = "cdn" if primeira_figura else False
+                f.write(fig.to_html(full_html=False, include_plotlyjs=include_js))
+                primeira_figura = False
 
         f.write("</body></html>")
 

@@ -47,7 +47,7 @@ def train_and_evaluate(
         model_path: str,
         num_cpus: int = 16,
         num_gpus: int = 0,
-        time_limit: int = 100,
+        time_limit: int = 50,
 ) -> pd.DataFrame:
 
     data = df[FEATURES + [LABEL, TARGET]]
@@ -104,60 +104,83 @@ def train_and_evaluate(
 
     return df_leaderboard
 
-def print_detailed_models(df_result: pd.DataFrame, strategy: str):
+def print_detailed_models(df_result: pd.DataFrame, strategy: str, time_limit: int = None):
     subset = df_result[df_result["fit_strategy"] == strategy]
-    
-    print(f"\n Modelos Treinados - Estratégia: {strategy.upper()}")
-    print("-" * 65)
-    print(f"{'Modelo':<25} | {'Val Score (RMSE)':<18} | {'Tempo Fit (s)':<12}")
-    print("-" * 65)
-    
+    if time_limit is not None:
+        subset = subset[subset["time_limit"] == time_limit]
+
+    tempo_total = subset["tempo_total_fit_s"].iloc[0]
+
+    header = f"\n Modelos Treinados - Estratégia: {strategy.upper()}"
+    if time_limit is not None:
+        header += f" | Time Limit: {time_limit}s"
+    print(header)
+    print("-" * 100)
+    print(f"{'Modelo':<25} | {'Val Score (RMSE)':<18} | {'Tempo Acumulado (s)':<20}")
+    print("-" * 100)
+
     for _, row in subset.iterrows():
         model_name = row["model"]
-        val_score = abs(row["score_val"])  # Converte RMSE negativo para positivo
-        fit_time = row["fit_time"]
-        print(f"{model_name:<25} | {val_score:<18.5f} | {fit_time:<12.2f}")
-    print("-" * 65)
+        val_score = abs(row["score_val"])
+        fit_cumulative = row["fit_time"]
 
-def run_benchmark(df: pd.DataFrame) -> pd.DataFrame:
+        print(f"{model_name:<25} | {val_score:<18.5f} | {fit_cumulative:<20.2f}")
 
-    sequential_result = train_and_evaluate(
-        df = df,
-        fit_strategy="sequential",
-        model_path="AutogluonModels/moid_sequential",
-    )
+    print("-" * 100)
+    print(f"Tempo total da estratégia: {tempo_total:.2f}s")
 
-    paralell_result = train_and_evaluate(
-        df=df,
-        fit_strategy="parallel",
-        model_path="AutogluonModels/moid_parallel",
-    )
 
-    df_result = pd.concat([sequential_result, paralell_result], ignore_index=True)
+def print_benchmark_summary(df_result: pd.DataFrame, time_limits: list[int]):
+    print("\n" + "-" * 70)
+    print("BENCHMARK COMPARATIVO POR TIME LIMIT")
+    print("=" * 70)
+    print(f"{'Time Limit':<12} | {'Estratégia':<12} | {'Tempo Real (s)':<15} | {'MAE':<10}")
+    print("-" * 70)
+
+    for tl in time_limits:
+        for strategy in ["sequential", "parallel"]:
+            row = df_result[
+                (df_result["time_limit"] == tl) & (df_result["fit_strategy"] == strategy)
+            ].iloc[0]
+            print(f"{tl:<12} | {strategy:<12} | {row['tempo_total_fit_s']:<15.2f} | {row['test_mae_ensemble']:<10.5f}")
+    print("=" * 70)
+
+
+def run_benchmark(df: pd.DataFrame, time_limits: list[int] = [25, 50, 100]) -> pd.DataFrame:
+    all_results = []
+
+    for tl in time_limits:
+        sequential_result = train_and_evaluate(
+            df=df,
+            fit_strategy="sequential",
+            model_path=f"AutogluonModels/moid_sequential_{tl}s",
+            time_limit=tl,
+        )
+        sequential_result["time_limit"] = tl
+
+        parallel_result = train_and_evaluate(
+            df=df,
+            fit_strategy="parallel",
+            model_path=f"AutogluonModels/moid_parallel_{tl}s",
+            time_limit=tl,
+        )
+        parallel_result["time_limit"] = tl
+
+        all_results.append(sequential_result)
+        all_results.append(parallel_result)
+
+        print_detailed_models(sequential_result, "sequential", tl)
+        print_detailed_models(parallel_result, "parallel", tl)
+
+    df_result = pd.concat(all_results, ignore_index=True)
 
     RESULTS_PATH.mkdir(parents=True, exist_ok=True)
-
     csv_out = RESULTS_PATH / "autogluon_comparative_models.csv"
     parquet_out = RESULTS_PATH / "autogluon_comparative_models.parquet"
-
-    # Exporta os resultados para CSV e Parquet
     df_result.to_csv(csv_out, index=False)
     df_result.to_parquet(parquet_out, index=False)
-    print(f"Arquivos salvos em: {RESULTS_PATH}")
+    #print(f"\nArquivos salvos em: {RESULTS_PATH}")
 
-    print_detailed_models(df_result, "sequential")
-    print_detailed_models(df_result, "parallel")
-
-    t_seq = sequential_result["tempo_total_fit_s"].iloc[0]
-    t_par = paralell_result["tempo_total_fit_s"].iloc[0]
-
-    print("\n" + "-" *50)
-    print("BENCHMARK")
-    print("=" * 50)
-
-    print(f"Sequencial | Tempo: {t_seq:.2f}s | MAE: {sequential_result['test_mae_ensemble'].iloc[0]:.5f}")
-    print(f"Parallel   | Tempo: {t_par:.2f}s | MAE: {paralell_result['test_mae_ensemble'].iloc[0]:.5f}")
-    print(f"Diferença de tempo (seq - par): {t_seq - t_par:.2f}s")
-    print("=" * 50)
+    print_benchmark_summary(df_result, time_limits)
 
     return df_result
