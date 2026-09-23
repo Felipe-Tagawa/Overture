@@ -15,7 +15,7 @@ def get_clean_data(force_reprocess: bool = False):
     return clean_df
 
 if __name__ == "__main__":
-    df_final = get_clean_data(force_reprocess=True) # Trocar para True quando for mudar o arquivo parquet
+    df_final = get_clean_data(force_reprocess=False) # Trocar para True quando for mudar o arquivo parquet
     print(f"Total de Registros: {len(df_final)}")
     print(f"Colunas Disponíveis: {list(df_final.columns)}")
 
