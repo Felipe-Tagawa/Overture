@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Overture: MOID e PHAs</title>
+<meta name="description" content="Iniciação Científica — regressão do MOID a partir de elementos keplerianos e caminho para a classificação de PHAs. Apresentação para orientação em Física.">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/white.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1b2330;
+    --muted: #5b6676;
+    --line: #d9dee6;
+    --panel: #f4f6f9;
+    --accent: #1f5fae;     /* azul: asteroide / modelo */
+    --earth: #2e8b57;      /* verde: Terra */
+    --warn: #b4531a;       /* laranja: alerta / limitação */
+    --r-main-font: "IBM Plex Sans", system-ui, sans-serif;
+    --r-heading-font: "IBM Plex Sans", system-ui, sans-serif;
+    --r-code-font: "IBM Plex Mono", ui-monospace, monospace;
+    --r-main-color: var(--ink);
+    --r-heading-color: var(--ink);
+    --r-link-color: var(--accent);
+    --r-main-font-size: 30px;
+    --r-heading-text-transform: none;
+    --r-heading-font-weight: 600;
+    --r-heading-letter-spacing: -0.01em;
+  }
+  .reveal-viewport { background: #ffffff; }
+  .reveal h1 { font-size: 1.9em; }
+  .reveal h2 { font-size: 1.35em; margin-bottom: .5em; }
+  .reveal h3 { font-size: 1.0em; color: var(--muted); font-weight: 500; }
+  .reveal .kicker { font-size: .5em; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); font-weight: 600; margin-bottom: .4em; }
+  .reveal .slides section { text-align: left; }
+  .reveal .slides section.center-title { text-align: center; }
+  .reveal p, .reveal li { line-height: 1.35; }
+  .reveal ul { margin-left: 1em; }
+  .reveal li { margin: .25em 0; }
+  .reveal small, .reveal .small { font-size: .62em; color: var(--muted); }
+  .reveal .tiny { font-size: .5em; color: var(--muted); }
+  .reveal code { font-size: .85em; background: var(--panel); padding: .05em .3em; border-radius: 4px; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2em; align-items: start; }
+  .cols-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: .8em; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: .55em .75em; font-size: .72em; }
+  .card h4 { margin: 0 0 .3em 0; font-size: 1.05em; color: var(--accent); text-transform: none; }
+  .card.warn h4 { color: var(--warn); }
+  .card.earth h4 { color: var(--earth); }
+  .card p, .card li { margin: .2em 0; }
+  .callout { border-left: 4px solid var(--accent); padding: .35em .8em; background: #eef4fb; font-size: .72em; border-radius: 0 8px 8px 0; margin: .5em 0; }
+  .callout.warn { border-color: var(--warn); background: #fbf1ea; }
+  .callout.earth { border-color: var(--earth); background: #edf7f1; }
+  .reveal table { font-size: .6em; border-collapse: collapse; margin: .4em 0; }
+  .reveal table th, .reveal table td { padding: .3em .6em; border-bottom: 1px solid var(--line); }
+  .reveal table th { color: var(--muted); font-weight: 600; }
+  .reveal table td.num, .reveal table th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .reveal table tr.hl td { background: #eef4fb; font-weight: 600; }
+  .pipeline { display: flex; gap: .35em; align-items: stretch; flex-wrap: wrap; font-size: .56em; margin: .4em 0 .6em; }
+  .pipeline .step { flex: 1 1 0; min-width: 7.5em; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: .45em .55em; position: relative; }
+  .pipeline .step b { display: block; color: var(--accent); margin-bottom: .15em; }
+  .pipeline .step.future { border-style: dashed; background: #fff; }
+  .pipeline .step.future b { color: var(--warn); }
+  .tag { display: inline-block; font-size: .7em; padding: .05em .45em; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); margin-right: .3em; }
+  .tag.done { border-color: var(--earth); color: var(--earth); }
+  .tag.todo { border-color: var(--warn); color: var(--warn); }
+  .bar-row { display: grid; grid-template-columns: 7.5em 1fr 4.2em; gap: .5em; align-items: center; font-size: .56em; margin: .18em 0; }
+  .bar-track { background: var(--panel); border-radius: 4px; height: 1em; position: relative; }
+  .bar-fill { height: 100%; border-radius: 4px; background: var(--accent); }
+  .bar-fill.base { background: #9aa7b8; }
+  .bar-row .v { text-align: right; font-variant-numeric: tabular-nums; }
+
+  /* Widget orbital */
+  .orbit-wrap { display: grid; grid-template-columns: 1.35fr 1fr; gap: 1em; align-items: start; }
+  .orbit-views { display: grid; grid-template-columns: 1fr 1fr; gap: .4em; }
+  .orbit-views figure { margin: 0; }
+  .orbit-views figcaption { font-size: .45em; color: var(--muted); text-align: center; }
+  .orbit-views svg { width: 100%; height: auto; background: #fbfcfd; border: 1px solid var(--line); border-radius: 8px; }
+  .ctrl { font-size: .5em; }
+  .ctrl label { display: grid; grid-template-columns: 5.2em 1fr 3.6em; align-items: center; gap: .5em; margin: .25em 0; }
+  .ctrl input[type=range] { width: 100%; accent-color: var(--accent); }
+  .ctrl .val { text-align: right; font-family: var(--r-code-font); }
+  .ctrl .presets button { font: inherit; font-size: .95em; margin: .15em .15em 0 0; padding: .2em .6em; border: 1px solid var(--line); background: #fff; border-radius: 6px; cursor: pointer; }
+  .ctrl .presets button:hover { border-color: var(--accent); color: var(--accent); }
+  .readout { margin-top: .5em; font-family: var(--r-code-font); font-size: 1em; background: var(--panel); border-radius: 8px; padding: .5em .7em; line-height: 1.55; }
+  .readout .big { font-size: 1.35em; font-weight: 500; }
+  .readout .pha-yes { color: var(--warn); font-weight: 600; }
+  .readout .pha-no { color: var(--earth); font-weight: 600; }
+  .reveal .footer-note { position: absolute; bottom: -1.2em; left: 0; font-size: .42em; color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+
+<!-- ===================================================== -->
+<!-- SLIDE 1 — Título & Contexto                          -->
+<!-- ===================================================== -->
+<section class="center-title">
+  <div class="kicker">Iniciação Científica · Orientação em Física</div>
+  <h1>Aprendendo a geometria do risco</h1>
+  <h3>Regressão do MOID a partir de elementos keplerianos<br>e o caminho para a classificação de PHAs</h3>
+  <p class="small" style="margin-top:1.2em">Pedro Henrique Ribeiro Dias · Felipe Tagawa Reis<br>
+  Orientador: Jonas Lopes de Vilas Boas · Co-orientador: Felipe Augusto</p>
+  <p class="tiny">Dados: JPL Small-Body Database (via Kaggle “Asteroid Dataset”) · Projeto <i>Overture</i></p>
+  <aside class="notes">Abrir com a pergunta: dá para aprender, só com dados, a geometria que define se uma órbita é perigosa? Enfatizar que é uma IC em andamento.</aside>
+</section>
+
+<section>
+  <div class="kicker">1 · Contexto</div>
+  <h2>Por que NEOs, e por que o MOID?</h2>
+  <div class="cols">
+    <div>
+      <ul style="font-size:.78em">
+        <li><b>NEO</b> (<i>Near-Earth Object</i>): periélio \(q &lt; 1{,}3\) UA.</li>
+        <li><b>PHA</b>: um NEO “grande” cuja órbita passa perto da órbita terrestre:
+          \[ \text{MOID} \le 0{,}05\ \text{UA} \;\wedge\; H \le 22{,}0 \]</li>
+        <li>O <b>MOID</b> é uma propriedade <i>geométrica</i> das duas órbitas, e não a distância instantânea. É por isso o primeiro filtro de risco de longo prazo.</li>
+      </ul>
+    </div>
+    <div>
+      <div class="card">
+        <h4>O conjunto de dados, depois da limpeza</h4>
+        <table style="font-size:.95em;width:100%">
+          <tr><td>Objetos (após os filtros)</td><td class="num">920 247</td></tr>
+          <tr><td>NEOs (\(q&lt;1{,}3\) UA)</td><td class="num">22 798</td></tr>
+          <tr><td>Com MOID \(\le 0{,}05\) UA</td><td class="num">11 090</td></tr>
+          <tr class="hl"><td>Rotulados PHA</td><td class="num">2 051 (0,22 %)</td></tr>
+        </table>
+        <p class="tiny">Contagens calculadas sobre o cache <code>asteroid_dataset.parquet</code> do repositório.</p>
+      </div>
+      <div class="callout">Pergunta da IC: <b>um modelo de ML consegue aprender, só com os dados, a função que leva os elementos orbitais ao MOID?</b> E, se consegue, com que precisão ele trabalha <i>perto do limiar</i> de 0,05 UA?</div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================================================== -->
+<!-- SLIDE 2 — Transição metodológica                      -->
+<!-- ===================================================== -->
+<section>
+  <div class="kicker">2 · Origem do projeto</div>
+  <h2>De Sistemas Operacionais à Física</h2>
+  <div class="cols">
+    <div style="font-size:.74em">
+      <p><span class="tag">histórico</span> O projeto nasceu na disciplina de <b>Sistemas Operacionais (C12)</b>: medimos o <code>fit_strategy</code> do AutoGluon, <i>sequential</i> vs <i>parallel</i> (Ray), treinando o MOID como carga de trabalho.</p>
+      <p>O benchmark mostrou que o paralelismo mexe pouco no tempo de parede. O que chamou atenção foi outra coisa: <b>o próprio MOID se mostrou muito aprendível</b>, com \(R^2 &gt; 0{,}99\) em todas as execuções.</p>
+      <div class="callout earth"><b>A virada:</b> o que era carga de trabalho virou <b>objeto de estudo</b>. Deixamos de perguntar “quão rápido treina?” e passamos a perguntar “o que o modelo aprendeu da mecânica celeste, e onde ele falha?”</div>
+    </div>
+    <div>
+      <table>
+        <thead><tr><th>Orçamento</th><th>Estratégia</th><th class="num">Tempo (s)</th><th class="num">MAE (UA)</th><th class="num">R²</th></tr></thead>
+        <tbody>
+          <tr><td>25 s</td><td>sequential</td><td class="num">26,9</td><td class="num">0,0091</td><td class="num">0,9967</td></tr>
+          <tr><td></td><td>parallel</td><td class="num">23,2</td><td class="num">0,0083</td><td class="num">0,9984</td></tr>
+          <tr><td>50 s</td><td>sequential</td><td class="num">50,5</td><td class="num">0,0056</td><td class="num">0,9988</td></tr>
+          <tr><td></td><td>parallel</td><td class="num">46,9</td><td class="num">0,0044</td><td class="num">0,9991</td></tr>
+          <tr><td>100 s</td><td>sequential</td><td class="num">100,4</td><td class="num">0,0040</td><td class="num">0,9990</td></tr>
+          <tr><td></td><td>parallel</td><td class="num">93,1</td><td class="num">0,0048</td><td class="num">0,9993</td></tr>
+        </tbody>
+      </table>
+      <p class="tiny">Fonte: <code>src/results/autogluon_comparative_models.csv</code>, ensemble <code>WeightedEnsemble_L2</code>. Split único 80/20, <code>random_state=42</code>. Esta etapa fica registrada como histórico e não é o foco daqui em diante.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===================================================== -->
+<!-- SLIDES 3–4 — A Física dos Asteroides                  -->
+<!-- ===================================================== -->
+<section>
+<section>
+  <div class="kicker">3 · Mecânica celeste</div>
+  <h2>Uma órbita em três camadas</h2>
+  <div class="cols">
+    <div style="font-size:.72em">
+      <p>Problema de dois corpos: a órbita heliocêntrica é uma cônica com foco no Sol:</p>
+      \[ r(\nu) = \frac{a\,(1-e^2)}{1 + e\cos\nu}, \qquad q = a(1-e),\quad Q = a(1+e) \]
+      <table style="font-size:.9em;width:100%">
+        <thead><tr><th>Camada</th><th>Elementos</th><th>Papel geométrico</th></tr></thead>
+        <tbody>
+          <tr><td>Forma</td><td>\(a,\ e\)</td><td>tamanho e alongamento da elipse</td></tr>
+          <tr><td>Plano</td><td>\(i,\ \Omega\)</td><td>inclinação e orientação da linha dos nós</td></tr>
+          <tr><td>Orientação no plano</td><td>\(\omega\)</td><td>onde fica o periélio a partir do nó</td></tr>
+          <tr><td>Fase</td><td>\(M\)</td><td>posição no instante: <b>não entra no MOID</b></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div style="font-size:.72em">
+      <p>Posição no referencial da eclíptica (\(u = \omega + \nu\)):</p>
+      \[
+      \begin{aligned}
+      x &= r\,(\cos\Omega\cos u - \sin\Omega\sin u\cos i)\\
+      y &= r\,(\sin\Omega\cos u + \cos\Omega\sin u\cos i)\\
+      z &= r\,\sin u\,\sin i
+      \end{aligned}
+      \]
+      <div class="callout"><b>Features do modelo</b> (<code>src/data/config.py</code>): \(a, e, i, \Omega, \omega\). \(M\) fica de fora de propósito, porque é fase e não geometria. \(H\) é carregado e validado, mas <b>não é feature</b>, já que é fotométrico e não afeta o MOID.</div>
+    </div>
+  </div>
+  <aside class="notes">Tecla ↓ abre o simulador interativo.</aside>
+</section>
+
+<section>
+  <div class="kicker">3b · Interativo</div>
+  <h2 style="font-size:1.1em">Simulador: elementos keplerianos → MOID</h2>
+  <div class="orbit-wrap">
+    <div class="orbit-views">
+      <figure><svg id="viewXY" viewBox="-3.2 -3.2 6.4 6.4"></svg><figcaption>Vista de cima (plano da eclíptica, x–y)</figcaption></figure>
+      <figure><svg id="viewXZ" viewBox="-3.2 -3.2 6.4 6.4"></svg><figcaption>Vista de perfil (x–z)</figcaption></figure>
+    </div>
+    <div class="ctrl">
+      <label>a (UA) <input type="range" id="s-a" min="0.6" max="4.5" step="0.005" value="1.126"><span class="val" id="v-a"></span></label>
+      <label>e <input type="range" id="s-e" min="0" max="0.89" step="0.001" value="0.204"><span class="val" id="v-e"></span></label>
+      <label>i (°) <input type="range" id="s-i" min="0" max="60" step="0.1" value="6.0"><span class="val" id="v-i"></span></label>
+      <label>Ω (°) <input type="range" id="s-O" min="0" max="360" step="1" value="2"><span class="val" id="v-O"></span></label>
+      <label>ω (°) <input type="range" id="s-w" min="0" max="360" step="0.5" value="66"><span class="val" id="v-w"></span></label>
+      <label>H (mag) <input type="range" id="s-H" min="12" max="28" step="0.1" value="20.2"><span class="val" id="v-H"></span></label>
+      <div class="presets">Exemplos (valores aprox.):
+        <button data-p="1.126,0.204,6.0,2,66,20.2">Bennu</button>
+        <button data-p="0.922,0.191,3.3,204,127,19.1">Apophis</button>
+        <button data-p="1.458,0.223,10.8,304,179,10.4">Eros</button>
+        <button data-p="2.77,0.079,10.6,80,74,3.3">Ceres</button>
+      </div>
+      <div class="readout" id="readout"></div>
+      <p class="tiny" style="margin-top:.4em">Aproximação: a Terra é um círculo de 1 UA na eclíptica. Assim a distância de um ponto à órbita terrestre tem forma fechada, \(\sqrt{(\rho-1)^2+z^2}\), e o MOID sai por minimização em \(\nu\). Experimente mexer em Ω: nessa aproximação ele <b>não altera o MOID</b>.</p>
+    </div>
+  </div>
+</section>
+</section>
+
+<section>
+<section>
+  <div class="kicker">4 · Do elemento orbital ao risco</div>
+  <h2>MOID: definição e cotas analíticas</h2>
+  <div class="cols">
+    <div style="font-size:.72em">
+      <p><b>Definição</b>: mínimo global da distância entre duas curvas fechadas em \(\mathbb{R}^3\):</p>
+      \[ \text{MOID} = \min_{\nu_1,\,\nu_2}\ \big\lVert \mathbf{r}_{\text{ast}}(\nu_1) - \mathbf{r}_{\oplus}(\nu_2) \big\rVert \]
+      <p>O cálculo exato se reduz a encontrar raízes de um polinômio trigonométrico, com até 16 pontos críticos (Gronchi, 2005). Mas o problema admite <b>cotas simples</b>:</p>
+      <ul>
+        <li><b>Cota inferior (radial)</b>:
+          \( \text{MOID} \ge \max(q - Q_\oplus,\ q_\oplus - Q,\ 0) \)</li>
+        <li><b>Cota superior (nodal)</b>: nos nós o asteroide cruza a eclíptica, em
+          \( r_\pm = \dfrac{a(1-e^2)}{1 \pm e\cos\omega} \)
+          <br>\(\Rightarrow\ \text{MOID} \lesssim \min |r_\pm - 1| \) (com Terra circular)</li>
+      </ul>
+    </div>
+    <div style="font-size:.72em">
+      <div class="card">
+        <h4>O que cada feature “deveria” fazer</h4>
+        <ul>
+          <li>\(a, e\) entram via \(q\). Para objetos do cinturão, \(\text{MOID} \approx q - 1\).</li>
+          <li>\(i\) “levanta” a órbita da eclíptica e só pesa quando \(q \lesssim 1\).</li>
+          <li>\(\omega\) decide <i>onde</i> ficam os nós, portanto \(r_\pm\).</li>
+          <li>\(\Omega\): <b>simetria rotacional</b>. Com Terra circular, girar em torno de \(\hat z\) não muda nada. Só a excentricidade da Terra (\(e_\oplus \approx 0{,}0167\)) quebra essa simetria.</li>
+        </ul>
+      </div>
+      <div class="callout warn">\(e_\oplus\) mexe em \(\sim 0{,}017\) UA, <b>cerca de 1/3 do limiar PHA</b>. Longe do limiar \(\Omega\) é irrelevante, mas perto dele deixa de ser. É uma pergunta física que dá para testar no modelo.</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="kicker">4b · Evidência nos dados</div>
+  <h2>Os dados confirmam a física?</h2>
+  <div class="cols">
+    <div>
+      <p style="font-size:.62em;color:var(--muted);margin:0 0 .3em">Correlação de Spearman com o MOID (n = 920 247)</p>
+      <div class="bar-row"><span>\(q = a(1-e)\)*</span><div class="bar-track"><div class="bar-fill" style="width:99.8%"></div></div><span class="v">+0,998</span></div>
+      <div class="bar-row"><span>\(a\)</span><div class="bar-track"><div class="bar-fill" style="width:84.9%"></div></div><span class="v">+0,849</span></div>
+      <div class="bar-row"><span>\(e\)</span><div class="bar-track"><div class="bar-fill" style="width:61.2%;background:var(--warn)"></div></div><span class="v">−0,612</span></div>
+      <div class="bar-row"><span>\(H\)</span><div class="bar-track"><div class="bar-fill" style="width:51.5%;background:var(--warn)"></div></div><span class="v">−0,515</span></div>
+      <div class="bar-row"><span>\(i\)</span><div class="bar-track"><div class="bar-fill" style="width:14.7%"></div></div><span class="v">+0,147</span></div>
+      <div class="bar-row"><span>\(\Omega\)</span><div class="bar-track"><div class="bar-fill" style="width:0.5%"></div></div><span class="v">−0,005</span></div>
+      <div class="bar-row"><span>\(\omega\)</span><div class="bar-track"><div class="bar-fill" style="width:0.5%"></div></div><span class="v">−0,005</span></div>
+      <p class="tiny">* \(q\) não é feature do modelo atual: foi derivada aqui só para diagnóstico. Laranja = correlação negativa.</p>
+    </div>
+    <div style="font-size:.7em">
+      <ul>
+        <li>\(\Omega \approx 0\): <b>é o que a simetria rotacional prevê</b>.</li>
+        <li>\(\omega \approx 0\) no agregado: o efeito de \(\omega\) é não-monotônico (entra via \(\cos\omega\)) e aparece só para \(q\sim 1\).</li>
+        <li>\(H\) correlaciona com MOID por <b>viés observacional</b>, não por causa física: objetos pequenos (\(H\) alto) só são descobertos quando passam perto.</li>
+      </ul>
+      <div class="callout warn">\(H\) <b>não</b> deve virar feature de regressão do MOID. Isso vazaria viés de seleção. \(H\) entra na etapa de PHA, onde a definição física o exige: \(D \approx \frac{1329\ \text{km}}{\sqrt{p_V}}\,10^{-H/5}\), e \(H=22 \Rightarrow D\approx 140\) m para \(p_V=0{,}14\).</div>
+    </div>
+  </div>
+</section>
+</section>
+
+<!-- ===================================================== -->
+<!-- SLIDES 5–6 — Engenharia de dados & ML                 -->
+<!-- ===================================================== -->
+<section>
+<section>
+  <div class="kicker">5 · Engenharia de dados & ML</div>
+  <h2>A pipeline atual</h2>
+  <div class="pipeline">
+    <div class="step"><b>1. Extração</b><code>kagglehub</code> → <code>dataset.csv</code> (JPL SBDB)</div>
+    <div class="step"><b>2. Validação</b>Schema <code>pandera</code> gerado do <code>schema.toml</code>, com \(a&gt;0\) e MOID \(&gt;0\)</div>
+    <div class="step"><b>3. Filtro físico</b>\(a &lt; 5\) UA, \(e &lt; 0{,}9\): remove objetos quase-parabólicos e cometários</div>
+    <div class="step"><b>4. Alvo</b>\(y = \log(1+\text{MOID})\)</div>
+    <div class="step"><b>5. Treino</b>AutoGluon <code>medium_quality</code>, RMSE em \(y\), split 80/20</div>
+    <div class="step"><b>6. Avaliação</b><code>expm1</code> → MAE, RMSE, R² em UA</div>
+  </div>
+  <div class="cols">
+    <div style="font-size:.68em">
+      <p><b>Métricas</b> (na escala original, em UA):</p>
+      \[ \text{MAE} = \tfrac{1}{n}\textstyle\sum |y_k-\hat y_k| \qquad \text{RMSE} = \sqrt{\tfrac{1}{n}\textstyle\sum (y_k-\hat y_k)^2} \]
+      \[ R^2 = 1 - \frac{\sum (y_k-\hat y_k)^2}{\sum (y_k-\bar y)^2} \]
+      <p class="small">MAE é robusto e fácil de interpretar em UA/LD. RMSE pune erros grandes. R² é relativo à variância total, e aqui ela é dominada pelo cinturão principal.</p>
+    </div>
+    <div style="font-size:.68em">
+      <div class="card">
+        <h4>Portfólio treinado</h4>
+        <p>LightGBM (+XT, Large), XGBoost, CatBoost, ExtraTrees, NeuralNet (FastAI, Torch), combinados num <code>WeightedEnsemble_L2</code>.</p>
+      </div>
+      <div class="card warn" style="margin-top:.5em">
+        <h4>Rigor: observações do código</h4>
+        <ul>
+          <li>Para MOID pequeno, \(\log(1+x) \approx x\). O <code>log1p</code> <b>não</b> expande a região crítica: a assimetria vai de −0,20 para −1,07. Um \(\log(x+\varepsilon)\) com \(\varepsilon \ll 0{,}05\) faria isso.</li>
+          <li>A documentação cita \(a&lt;100\) e o código usa \(a&lt;5\). O README lista \(H\) e <code>pha</code> como features, e o código não os usa.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="kicker">5b · Resultados vs. física</div>
+  <h2>O ML supera uma fórmula de uma linha?</h2>
+  <div class="cols">
+    <div>
+      <p style="font-size:.62em;color:var(--muted);margin:0 0 .3em">MAE no conjunto de teste (UA), menor é melhor. n = 184 050</p>
+      <div class="bar-row"><span>Nodal \(\min|r_\pm-1|\)</span><div class="bar-track"><div class="bar-fill base" style="width:100%"></div></div><span class="v">0,0995</span></div>
+      <div class="bar-row"><span>Cota radial</span><div class="bar-track"><div class="bar-fill base" style="width:30.6%"></div></div><span class="v">0,0304</span></div>
+      <div class="bar-row"><span>\(\max(q-1,0)\)</span><div class="bar-track"><div class="bar-fill base" style="width:19.5%"></div></div><span class="v">0,0194</span></div>
+      <div class="bar-row"><span>Ensemble (100 s)</span><div class="bar-track"><div class="bar-fill" style="width:4.0%"></div></div><span class="v">0,0040</span></div>
+      <table style="margin-top:.6em">
+        <thead><tr><th>Modelo</th><th class="num">MAE</th><th class="num">RMSE</th><th class="num">R²</th></tr></thead>
+        <tbody>
+          <tr><td>\(\max(q-1,0)\), sem treino</td><td class="num">0,0194</td><td class="num">0,0323</td><td class="num">0,9939</td></tr>
+          <tr class="hl"><td>Ensemble parallel 100 s</td><td class="num">0,0048</td><td class="num">0,0112</td><td class="num">0,9993</td></tr>
+        </tbody>
+      </table>
+      <p class="tiny">Baselines calculados neste material, no mesmo split (<code>random_state=42</code>).</p>
+    </div>
+    <div style="font-size:.7em">
+      <ul>
+        <li>Uma fórmula sem nenhum parâmetro treinado já dá <b>R² = 0,994</b>. O R² alto do modelo é, em grande parte, a geometria de \(q\).</li>
+        <li>O ML reduz o MAE em <b>~4×</b>, o que mostra que ele aprende correções reais além de \(q-1\) (inclinação, nós).</li>
+        <li>MAE ≈ 0,004 UA ≈ <b>1,6 LD</b> ≈ 600 mil km.</li>
+      </ul>
+      <div class="callout warn"><b>O ponto cego:</b> no subconjunto com MOID \(&lt; 0{,}05\) UA (2 199 objetos no teste, média de 0,018 UA), o baseline erra 0,016 UA em média, praticamente o tamanho do sinal. <b>O desempenho do modelo nessa região ainda não foi medido.</b> Um RMSE global de 0,011 UA equivale a ~22 % do limiar PHA.</div>
+    </div>
+  </div>
+</section>
+</section>
+
+<section>
+  <div class="kicker">6 · Próxima etapa</div>
+  <h2>Do MOID ao PHA: plano de correlação</h2>
+  <div class="cols-3">
+    <div class="card">
+      <h4>A · Avaliar onde importa</h4>
+      <ul>
+        <li>Métricas <b>estratificadas</b> por faixa de MOID e por classe orbital (Apollo, Aten, Amor, MBA).</li>
+        <li>Resíduos em função de \(q\), \(i\), \(\omega\).</li>
+        <li>Validação cruzada com várias sementes e intervalos de confiança.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>B · Importância das features</h4>
+      <ul>
+        <li><i>Permutation importance</i> (já prevista no código) e SHAP.</li>
+        <li><b>Hipóteses físicas testáveis</b>: \(\Omega\) ≈ 0 globalmente e \(&gt;0\) perto do limiar; \(\omega\) relevante só para \(q\approx1\).</li>
+        <li>Features derivadas: \(q\), \(Q\), \(r_\pm\), \(\sin i\).</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>C · Classificação PHA</h4>
+      <ul>
+        <li><b>Via regressão</b>: \(\widehat{\text{MOID}} \le 0{,}05 \wedge H \le 22\).</li>
+        <li><b>Direta</b>: classificador com desbalanceamento de 0,22 %. Métricas: recall, PR-AUC, matriz de confusão.</li>
+        <li>Na triagem de risco, o custo de um falso negativo é muito maior que o de um falso positivo.</li>
+      </ul>
+    </div>
+  </div>
+  <p class="small" style="margin-top:.8em"><span class="tag done">feito</span> regressão global do MOID · benchmark de treino
+  &nbsp; <span class="tag todo">em aberto</span> avaliação na região crítica · importância · correlação com PHA</p>
+  <p class="tiny">Observação: MOID \(\le 0{,}05\) e \(H \le 22\) dá 2 068 objetos, contra 2 051 rotulados <code>pha</code>. A diferença de 17 casos precisa ser explicada (arredondamento do MOID? época das soluções orbitais?).</p>
+</section>
+
+<!-- ===================================================== -->
+<!-- SLIDES 7–8 — Escalabilidade & Visão INPE              -->
+<!-- ===================================================== -->
+<section>
+  <div class="kicker">7 · Escalabilidade</div>
+  <h2>De 10⁶ objetos estáticos a um fluxo contínuo</h2>
+  <div class="cols">
+    <div style="font-size:.7em">
+      <p><b>Vera C. Rubin Observatory (LSST)</b>: levantamento de 10 anos do céu austral, com projeção de <b>milhões</b> de novos pequenos corpos e alertas na casa de ~10⁷ por noite (estimativas de projeto).</p>
+      <p>Cada nova órbita, ou atualização de órbita, vira uma consulta de MOID. O ML entra como <b>filtro de triagem rápido</b>, antes do cálculo exato e da propagação numérica.</p>
+      <div class="callout">A pergunta de escala deixa de ser “qual o R²?” e passa a ser <b>“qual o recall de PHAs a um custo computacional fixo por órbita?”</b></div>
+    </div>
+    <div>
+      <div class="pipeline" style="flex-direction:column;font-size:.6em">
+        <div class="step future"><b>Ingestão</b>MPC / JPL SBDB / alertas Rubin, com versionamento por época orbital</div>
+        <div class="step future"><b>Features físicas</b>\(q, Q, r_\pm\) + incertezas (<code>sigma_*</code> já estão no dataset)</div>
+        <div class="step future"><b>Triagem ML</b>\(\widehat{\text{MOID}}\) com intervalo (quantílica ou conformal)</div>
+        <div class="step future"><b>Refinamento</b>MOID exato (Gronchi) só nos candidatos perto do limiar</div>
+        <div class="step future"><b>Monitoramento</b>Drift da população, re-treino e alertas</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="kicker">8 · Visão INPE</div>
+  <h2>ML informado pela física</h2>
+  <div class="cols">
+    <div style="font-size:.68em">
+      <div class="card">
+        <h4>Modelo híbrido (curto prazo)</h4>
+        <p>Aprender só o <b>resíduo</b> em relação à física conhecida:</p>
+        \[ \widehat{\text{MOID}} = \max(q-1,0) + f_\theta(a,e,i,\omega,\Omega) \]
+        <p>O alvo fica menor e mais bem condicionado, e o que a rede aprende é interpretável como “correção geométrica”.</p>
+      </div>
+      <div class="card" style="margin-top:.5em">
+        <h4>Restrições físicas na perda (estilo PINN)</h4>
+        \[ \mathcal{L} = \mathcal{L}_{\text{dados}} + \lambda_1\,\mathrm{ReLU}\big(\hat{m} - \min|r_\pm-1|\big)^2 + \lambda_2\,\mathrm{ReLU}\big(m_{\text{inf}} - \hat{m}\big)^2 \]
+        <p class="small">Penaliza previsões que violam as cotas nodal e radial. Um termo de invariância em \(\Omega\) pode entrar como <i>data augmentation</i>.</p>
+      </div>
+    </div>
+    <div style="font-size:.68em">
+      <ul>
+        <li><b>PINN no sentido estrito</b>: a rede aprende \(\mathbf{r}(t)\) sob \(\ddot{\mathbf{r}} = -\mu\,\mathbf{r}/r^3 + \mathbf{a}_{\text{pert}}\). Serve para estudar como perturbações planetárias (Júpiter, encontros próximos) fazem o MOID evoluir.</li>
+        <li><b>Incerteza</b>: propagar as <code>sigma_*</code> por Monte Carlo e obter uma <i>probabilidade</i> de MOID \(&lt;0{,}05\) em vez de uma estimativa pontual.</li>
+        <li><b>Monitoramento contínuo</b>: MOID como série temporal por objeto, conforme as órbitas são refinadas.</li>
+      </ul>
+      <div class="callout earth"><b>Gancho institucional:</b> sair da regressão tabular e chegar a um <b>pipeline físico-computacional de triagem de NEOs</b>, na interface entre ciências espaciais e computação de alto desempenho. As linhas de pesquisa e os contatos no INPE ficam a definir com a orientação.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================================================== -->
+<!-- Fechamento                                            -->
+<!-- ===================================================== -->
+<section>
+  <div class="kicker">Para a orientação em Física</div>
+  <h2>Perguntas que queremos discutir</h2>
+  <ol style="font-size:.74em">
+    <li>A aproximação de Terra circular é aceitável como <i>feature</i>, ou devemos incluir \(e_\oplus, \varpi_\oplus\) desde já?</li>
+    <li>Que referência usar como <b>verdade de campo</b> do MOID: a coluna do SBDB ou um cálculo próprio (Gronchi / Wiśniowski–Rickman)?</li>
+    <li>Faz sentido tratar a evolução secular do MOID (Kozai–Lidov, ressonâncias) como extensão da IC?</li>
+    <li>Qual o escopo realista para uma primeira submissão (congresso de IC / SAB), e o que levar a uma conversa com o INPE?</li>
+  </ol>
+  <p class="tiny" style="margin-top:1.5em">Referências de partida: Gronchi, G. F. (2005), <i>Celest. Mech. Dyn. Astron.</i> 93 · Wiśniowski &amp; Rickman (2013), <i>Acta Astron.</i> 63 · Murray &amp; Dermott, <i>Solar System Dynamics</i> (1999) · Raissi et al. (2019), <i>J. Comput. Phys.</i> 378 · Ivezić et al. (2019), <i>ApJ</i> 873 (LSST).</p>
+  <p class="tiny">Navegação: ← → seções · ↓ detalhes · <kbd>S</kbd> notas do apresentador · <kbd>Esc</kbd> visão geral</p>
+</section>
+
+</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/notes/notes.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<script>
+renderMathInElement(document.querySelector('.reveal .slides'), {
+  delimiters: [
+    { left: '\\[', right: '\\]', display: true },
+    { left: '\\(', right: '\\)', display: false }
+  ],
+  throwOnError: false
+});
+Reveal.initialize({
+  hash: true,
+  slideNumber: 'c/t',
+  width: 1280,
+  height: 760,
+  margin: 0.05,
+  transition: 'fade',
+  plugins: [ RevealNotes ]
+});
+
+/* ---------- Simulador orbital ---------- */
+(function () {
+  const $ = id => document.getElementById(id);
+  const D2R = Math.PI / 180;
+  const NS = 'http://www.w3.org/2000/svg';
+  const ids = ['a', 'e', 'i', 'O', 'w', 'H'];
+
+  function pos(el, nu) {
+    const { a, e, i, O, w } = el;
+    const r = a * (1 - e * e) / (1 + e * Math.cos(nu));
+    const u = w + nu;
+    const cO = Math.cos(O), sO = Math.sin(O), cu = Math.cos(u), su = Math.sin(u), ci = Math.cos(i), si = Math.sin(i);
+    return [r * (cO * cu - sO * su * ci), r * (sO * cu + cO * su * ci), r * su * si];
+  }
+  // Distância de um ponto a um círculo de raio 1 no plano z=0 (forma fechada)
+  const dCirc = p => Math.hypot(Math.hypot(p[0], p[1]) - 1, p[2]);
+
+  function moid(el) {
+    const N = 1440; let best = Infinity, bnu = 0;
+    for (let k = 0; k < N; k++) {
+      const nu = 2 * Math.PI * k / N, d = dCirc(pos(el, nu));
+      if (d < best) { best = d; bnu = nu; }
+    }
+    // refinamento por seção áurea
+    let lo = bnu - 2 * Math.PI / N, hi = bnu + 2 * Math.PI / N;
+    const g = (Math.sqrt(5) - 1) / 2;
+    for (let it = 0; it < 40; it++) {
+      const m1 = hi - g * (hi - lo), m2 = lo + g * (hi - lo);
+      if (dCirc(pos(el, m1)) < dCirc(pos(el, m2))) hi = m2; else lo = m1;
+    }
+    const nu = (lo + hi) / 2;
+    return { d: Math.min(best, dCirc(pos(el, nu))), nu };
+  }
+
+  function el(tag, attrs, parent) {
+    const n = document.createElementNS(NS, tag);
+    for (const k in attrs) n.setAttribute(k, attrs[k]);
+    parent.appendChild(n); return n;
+  }
+
+  function draw(svg, el_, res, proj) {
+    svg.innerHTML = '';
+    const s = 2.9 / Math.max(1.6, el_.a * (1 + el_.e));   // escala para caber na vista
+    const P = p => { const q = proj(p); return [q[0] * s, -q[1] * s]; };
+    // eixos
+    el('line', { x1: -3.1, y1: 0, x2: 3.1, y2: 0, stroke: '#e3e7ed', 'stroke-width': 0.012 }, svg);
+    el('line', { x1: 0, y1: -3.1, x2: 0, y2: 3.1, stroke: '#e3e7ed', 'stroke-width': 0.012 }, svg);
+    // Terra
+    let dE = '';
+    for (let k = 0; k <= 180; k++) { const t = 2 * Math.PI * k / 180; const q = P([Math.cos(t), Math.sin(t), 0]); dE += (k ? 'L' : 'M') + q[0].toFixed(4) + ' ' + q[1].toFixed(4); }
+    el('path', { d: dE, fill: 'none', stroke: '#2e8b57', 'stroke-width': 0.035 }, svg);
+    // Asteroide
+    let dA = '';
+    for (let k = 0; k <= 360; k++) { const q = P(pos(el_, 2 * Math.PI * k / 360)); dA += (k ? 'L' : 'M') + q[0].toFixed(4) + ' ' + q[1].toFixed(4); }
+    el('path', { d: dA, fill: 'none', stroke: '#1f5fae', 'stroke-width': 0.035 }, svg);
+    // Sol
+    el('circle', { cx: 0, cy: 0, r: 0.08, fill: '#e0a526' }, svg);
+    // Periélio
+    const pq = P(pos(el_, 0));
+    el('circle', { cx: pq[0], cy: pq[1], r: 0.06, fill: '#1f5fae' }, svg);
+    // Nós (u = 0 e u = π)
+    [[-el_.w, '#1f5fae'], [Math.PI - el_.w, '#9aa7b8']].forEach(([nu, c]) => {
+      const q = P(pos(el_, nu));
+      el('rect', { x: q[0] - 0.05, y: q[1] - 0.05, width: 0.1, height: 0.1, fill: '#fff', stroke: c, 'stroke-width': 0.025 }, svg);
+    });
+    // Segmento do MOID
+    const pa = pos(el_, res.nu); const rho = Math.hypot(pa[0], pa[1]) || 1;
+    const pe = [pa[0] / rho, pa[1] / rho, 0];
+    const A = P(pa), E = P(pe);
+    el('line', { x1: A[0], y1: A[1], x2: E[0], y2: E[1], stroke: '#b4531a', 'stroke-width': 0.04 }, svg);
+    el('circle', { cx: A[0], cy: A[1], r: 0.045, fill: '#b4531a' }, svg);
+  }
+
+  function update() {
+    const v = {}; ids.forEach(k => v[k] = parseFloat($('s-' + k).value));
+    $('v-a').textContent = v.a.toFixed(3); $('v-e').textContent = v.e.toFixed(3);
+    $('v-i').textContent = v.i.toFixed(1) + '°'; $('v-O').textContent = v.O.toFixed(0) + '°';
+    $('v-w').textContent = v.w.toFixed(1) + '°'; $('v-H').textContent = v.H.toFixed(1);
+    const E = { a: v.a, e: v.e, i: v.i * D2R, O: v.O * D2R, w: v.w * D2R };
+    const res = moid(E);
+    draw($('viewXY'), E, res, p => [p[0], p[1]]);
+    draw($('viewXZ'), E, res, p => [p[0], p[2]]);
+    const q = v.a * (1 - v.e), Q = v.a * (1 + v.e), p = v.a * (1 - v.e * v.e);
+    const rp = p / (1 + v.e * Math.cos(E.w)), rm = p / (1 - v.e * Math.cos(E.w));
+    const nodal = Math.min(Math.abs(rp - 1), Math.abs(rm - 1));
+    const lower = Math.max(q - 1, 1 - Q, 0);
+    const D = 1329 / Math.sqrt(0.14) * Math.pow(10, -v.H / 5) * 1000; // m
+    const isNEO = q < 1.3, isPHA = res.d <= 0.05 && v.H <= 22;
+    $('readout').innerHTML =
+      `<span class="big">MOID ≈ ${res.d.toFixed(4)} UA</span> (${(res.d / 0.00257).toFixed(1)} LD)<br>` +
+      `cota radial ≥ ${lower.toFixed(4)} · nodal ≤ ${nodal.toFixed(4)}<br>` +
+      `q = ${q.toFixed(3)} · Q = ${Q.toFixed(3)} · r₊ = ${rp.toFixed(3)} · r₋ = ${rm.toFixed(3)}<br>` +
+      `D ≈ ${D < 1000 ? D.toFixed(0) + ' m' : (D / 1000).toFixed(1) + ' km'} (p<sub>V</sub>=0,14) · NEO: ${isNEO ? 'sim' : 'não'}<br>` +
+      `PHA: <span class="${isPHA ? 'pha-yes' : 'pha-no'}">${isPHA ? 'SIM' : 'não'}</span>` +
+      ` <span style="color:var(--muted)">(MOID ≤ 0,05 ∧ H ≤ 22)</span>`;
+  }
+
+  ids.forEach(k => $('s-' + k).addEventListener('input', update));
+  document.querySelectorAll('.presets button').forEach(b => b.addEventListener('click', () => {
+    b.dataset.p.split(',').forEach((val, idx) => $('s-' + ids[idx]).value = val);
+    update();
+  }));
+  update();
+})();
+</script>
+</body>
+</html>
