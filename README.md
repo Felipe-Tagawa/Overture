@@ -8,7 +8,9 @@ Alunos: Pedro Henrique Ribeiro Dias e Felipe Tagawa Reis
 
 Orientador: Jonas Lopes de Vilas Boas (Professor da disciplina de Sistemas Operacionais)
 
-Co-orientador: Felipe Augusto Figueiredo (Professor da disciplina de Inteligência Artificial)
+Co-orientador 1: Felipe Augusto Pereira de Figueiredo (Professor da disciplina de Inteligência Artificial)
+
+Co-orientador 2: Felipe Emanoel Chaves (Professor de Física)
 
 ## Status Atual
 ---
