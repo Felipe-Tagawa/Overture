@@ -5,8 +5,10 @@ Projeto dedicado à primeira etapa da disciplina de Sistemas Operacionais (C12).
 ## Integrantes
 
 Alunos: Pedro Henrique Ribeiro Dias e Felipe Tagawa Reis
-Orientador: Jonas Lopes de Vilas Boas
-Co-orientador: Felipe Augusto
+
+Orientador: Jonas Lopes de Vilas Boas (Professor da disciplina de Sistemas Operacionais)
+
+Co-orientador: Felipe Augusto Figueiredo (Professor da disciplina de Inteligência Artificial)
 
 ## Status Atual
 ---
