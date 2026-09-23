@@ -89,6 +89,16 @@
   .readout .big { font-size: 1.35em; font-weight: 500; }
   .readout .pha-yes { color: var(--warn); font-weight: 600; }
   .readout .pha-no { color: var(--earth); font-weight: 600; }
+  /* Visão 3D */
+  .orbit3d-wrap { display: grid; grid-template-columns: 1.15fr 1fr; gap: 1em; align-items: start; }
+  #view3D { width: 100%; height: 520px; background: #fbfcfd; border: 1px solid var(--line); border-radius: 8px; cursor: grab; touch-action: none; display: block; }
+  #view3D:active { cursor: grabbing; }
+  .view-btns { margin-top: .35em; }
+  .view-btns button { font: inherit; font-size: .95em; margin: .1em .15em 0 0; padding: .2em .6em; border: 1px solid var(--line); background: #fff; border-radius: 6px; cursor: pointer; }
+  .view-btns button.on, .view-btns button:hover { border-color: var(--accent); color: var(--accent); }
+  .legend3d .lg { display: grid; grid-template-columns: 2.6em 1fr; gap: .6em; align-items: start; margin: 0 0 .35em; line-height: 1.3; }
+  .legend3d .lg svg { width: 2.6em; height: 1.05em; margin-top: .1em; }
+  .legend3d .readout { margin-top: .3em; padding: .35em .6em; line-height: 1.45; }
   .reveal .footer-note { position: absolute; bottom: -1.2em; left: 0; font-size: .42em; color: var(--muted); }
 </style>
 </head>
@@ -104,7 +114,7 @@
   <h1>Aprendendo a geometria do risco</h1>
   <h3>Regressão do MOID a partir de elementos keplerianos<br>e o caminho para a classificação de PHAs</h3>
   <p class="small" style="margin-top:1.2em">Pedro Henrique Ribeiro Dias · Felipe Tagawa Reis<br>
-  Orientador: Jonas Lopes de Vilas Boas · Co-orientador: Felipe Augusto</p>
+  Orientador: Prof. Felipe Emanoel Chaves · Co-orientador: Felipe Augusto</p>
   <p class="tiny">Dados: JPL Small-Body Database (via Kaggle “Asteroid Dataset”) · Projeto <i>Overture</i></p>
   <aside class="notes">Abrir com a pergunta: dá para aprender, só com dados, a geometria que define se uma órbita é perigosa? Enfatizar que é uma IC em andamento.</aside>
 </section>
@@ -146,22 +156,24 @@
   <div class="cols">
     <div style="font-size:.74em">
       <p><span class="tag">histórico</span> O projeto nasceu na disciplina de <b>Sistemas Operacionais (C12)</b>: medimos o <code>fit_strategy</code> do AutoGluon, <i>sequential</i> vs <i>parallel</i> (Ray), treinando o MOID como carga de trabalho.</p>
-      <p>O benchmark mostrou que o paralelismo mexe pouco no tempo de parede. O que chamou atenção foi outra coisa: <b>o próprio MOID se mostrou muito aprendível</b>, com \(R^2 &gt; 0{,}99\) em todas as execuções.</p>
+      <p>Com o mesmo orçamento de tempo, o <i>parallel</i> terminou <b>7–14 % mais rápido</b> e treinou <b>2–5× mais modelos base</b> (5/7/8 contra 1/2/3). Isso deu RMSE e R² melhores nos três orçamentos. No MAE, o <i>parallel</i> venceu em 25 s e 50 s, e o <i>sequential</i> venceu em 100 s (0,00397 contra 0,00481 UA).</p>
+      <p>O que mais chamou atenção, porém, foi outra coisa: <b>o próprio MOID se mostrou muito aprendível</b>, com \(R^2 &gt; 0{,}996\) em todas as seis execuções.</p>
       <div class="callout earth"><b>A virada:</b> o que era carga de trabalho virou <b>objeto de estudo</b>. Deixamos de perguntar “quão rápido treina?” e passamos a perguntar “o que o modelo aprendeu da mecânica celeste, e onde ele falha?”</div>
     </div>
     <div>
       <table>
-        <thead><tr><th>Orçamento</th><th>Estratégia</th><th class="num">Tempo (s)</th><th class="num">MAE (UA)</th><th class="num">R²</th></tr></thead>
+        <thead><tr><th>Orçamento</th><th>Estratégia</th><th class="num">Tempo (s)</th><th class="num">Modelos base</th><th class="num">MAE (UA)</th><th class="num">RMSE (UA)</th><th class="num">R²</th></tr></thead>
         <tbody>
-          <tr><td>25 s</td><td>sequential</td><td class="num">26,9</td><td class="num">0,0091</td><td class="num">0,9967</td></tr>
-          <tr><td></td><td>parallel</td><td class="num">23,2</td><td class="num">0,0083</td><td class="num">0,9984</td></tr>
-          <tr><td>50 s</td><td>sequential</td><td class="num">50,5</td><td class="num">0,0056</td><td class="num">0,9988</td></tr>
-          <tr><td></td><td>parallel</td><td class="num">46,9</td><td class="num">0,0044</td><td class="num">0,9991</td></tr>
-          <tr><td>100 s</td><td>sequential</td><td class="num">100,4</td><td class="num">0,0040</td><td class="num">0,9990</td></tr>
-          <tr><td></td><td>parallel</td><td class="num">93,1</td><td class="num">0,0048</td><td class="num">0,9993</td></tr>
+          <tr><td>25 s</td><td>sequential</td><td class="num">26,90</td><td class="num">1</td><td class="num">0,00909</td><td class="num">0,02346</td><td class="num">0,99675</td></tr>
+          <tr><td></td><td>parallel</td><td class="num">23,24</td><td class="num">5</td><td class="num">0,00830</td><td class="num">0,01662</td><td class="num">0,99837</td></tr>
+          <tr><td>50 s</td><td>sequential</td><td class="num">50,51</td><td class="num">2</td><td class="num">0,00560</td><td class="num">0,01440</td><td class="num">0,99877</td></tr>
+          <tr><td></td><td>parallel</td><td class="num">46,90</td><td class="num">7</td><td class="num">0,00436</td><td class="num">0,01221</td><td class="num">0,99912</td></tr>
+          <tr><td>100 s</td><td>sequential</td><td class="num">100,41</td><td class="num">3</td><td class="num">0,00397</td><td class="num">0,01290</td><td class="num">0,99902</td></tr>
+          <tr><td></td><td>parallel</td><td class="num">93,08</td><td class="num">8</td><td class="num">0,00481</td><td class="num">0,01122</td><td class="num">0,99926</td></tr>
         </tbody>
       </table>
-      <p class="tiny">Fonte: <code>src/results/autogluon_comparative_models.csv</code>, ensemble <code>WeightedEnsemble_L2</code>. Split único 80/20, <code>random_state=42</code>. Esta etapa fica registrada como histórico e não é o foco daqui em diante.</p>
+      <p class="tiny">Redução do tempo total com <i>parallel</i>: −13,6 % (25 s), −7,1 % (50 s), −7,3 % (100 s). Melhor modelo individual: LightGBMLarge (parallel) e LightGBM/LightGBMXT (sequential).</p>
+      <p class="tiny">Fonte: benchmark oficial em <code>src/results/autogluon_comparative_models.csv</code> (idêntico ao <code>.parquet</code>), agregado como em <code>src/results/plot.py</code>. Métricas do <code>WeightedEnsemble_L2</code> no teste, na escala original. Split único 80/20, <code>random_state=42</code>, 16 CPUs. O CSV da raiz (execução antiga, só sequential) não foi usado. Esta etapa fica registrada como histórico e não é o foco daqui em diante.</p>
     </div>
   </div>
 </section>
@@ -199,7 +211,71 @@
       <div class="callout"><b>Features do modelo</b> (<code>src/data/config.py</code>): \(a, e, i, \Omega, \omega\). \(M\) fica de fora de propósito, porque é fase e não geometria. \(H\) é carregado e validado, mas <b>não é feature</b>, já que é fotométrico e não afeta o MOID.</div>
     </div>
   </div>
-  <aside class="notes">Tecla ↓ abre o simulador interativo.</aside>
+  <aside class="notes">Tecla ↓: aprofundamento teórico (3a), simulador (3b) e visão 3D (3c).</aside>
+</section>
+
+<section>
+  <div class="kicker">3a · Aprofundamento teórico (1/2)</div>
+  <h2 style="font-size:1.15em">Cônica, apsides e referencial eclíptico</h2>
+  <div class="cols">
+    <div style="font-size:.6em">
+      <p style="margin-top:0"><b>Raio orbital em função da anomalia verdadeira \(\nu\).</b> É a solução do problema de dois corpos (1ª lei de Kepler): uma cônica com o Sol em um foco.</p>
+      \[ r(\nu) = \frac{a\,(1-e^2)}{1 + e\cos\nu}, \qquad p \equiv a(1-e^2)\ \ \text{(semi-latus rectum)} \]
+      <p>\(\nu\) é o ângulo, medido no foco, entre o periélio e a posição do corpo. Para \(0 \le e &lt; 1\) a órbita é fechada (elipse).</p>
+      <div class="cols" style="gap:.6em">
+        <div class="card" style="font-size:1em">
+          <h4>Periélio (\(\nu = 0\))</h4>
+          \[ q = r(0) = a(1-e) \]
+          <p>Menor distância ao Sol. Um NEO tem \(q &lt; 1{,}3\) UA.</p>
+        </div>
+        <div class="card" style="font-size:1em">
+          <h4>Afélio (\(\nu = \pi\))</h4>
+          \[ Q = r(\pi) = a(1+e) \]
+          <p>Maior distância ao Sol. Note que \(q + Q = 2a\).</p>
+        </div>
+      </div>
+    </div>
+    <div style="font-size:.6em">
+      <p style="margin-top:0"><b>Referencial heliocêntrico eclíptico</b> (J2000):</p>
+      <ul style="margin-top:.1em">
+        <li>A origem fica no Sol (a rigor, no baricentro do Sistema Solar).</li>
+        <li>O plano \(xy\) é a <b>eclíptica</b>, o plano médio da órbita da Terra.</li>
+        <li>O eixo \(\hat x\) aponta para o <b>equinócio vernal</b> (γ, o ponto de Áries).</li>
+        <li>O eixo \(\hat z\) aponta para o polo norte da eclíptica, e o sistema é dextrógiro.</li>
+      </ul>
+      \[ \mathbf{r}_{\text{ecl}} = R_z(\Omega)\,R_x(i)\,R_z(\omega)\,\begin{pmatrix} r\cos\nu \\ r\sin\nu \\ 0 \end{pmatrix} \]
+      <p class="small" style="margin:0">A rotação leva o vetor do plano orbital (com \(\hat x\) no periélio) para a eclíptica.</p>
+    </div>
+  </div>
+  <aside class="notes">Slide de apoio: pode ser pulado se o tempo for curto. p = semi-latus rectum.</aside>
+</section>
+
+<section>
+  <div class="kicker">3a · Aprofundamento teórico (2/2)</div>
+  <h2 style="font-size:1.15em">Os elementos keplerianos e a equação de Kepler</h2>
+  <div class="cols" style="grid-template-columns:1.25fr 1fr">
+    <div style="font-size:.6em">
+      <p style="margin-top:0"><b>Os seis elementos keplerianos</b>:</p>
+      <table style="font-size:1em;width:100%">
+        <thead><tr><th>Símbolo</th><th>Nome</th><th>Significado físico</th><th>Faixa</th></tr></thead>
+        <tbody>
+          <tr><td>\(a\)</td><td>Semieixo maior</td><td>Tamanho da órbita. Fixa a energia, \(\varepsilon = -\mu/2a\), e o período (3ª lei).</td><td>\(&gt;0\) UA</td></tr>
+          <tr><td>\(e\)</td><td>Excentricidade</td><td>Alongamento da elipse.</td><td>\([0,1)\)</td></tr>
+          <tr><td>\(i\)</td><td>Inclinação</td><td>Ângulo entre o plano orbital e a eclíptica. Acima de \(90^\circ\) a órbita é retrógrada.</td><td>\([0^\circ,180^\circ]\)</td></tr>
+          <tr><td>\(\Omega\)</td><td>Longitude do nó ascendente</td><td>Ângulo, na eclíptica, de \(\hat x\) (γ) até o nó ascendente, onde o corpo cruza a eclíptica subindo (\(z\): − → +). Orienta o plano.</td><td>\([0^\circ,360^\circ)\)</td></tr>
+          <tr><td>\(\omega\)</td><td>Argumento do periélio</td><td>Ângulo, no plano orbital, do nó ascendente até o periélio. Orienta a elipse dentro do plano.</td><td>\([0^\circ,360^\circ)\)</td></tr>
+          <tr><td>\(M\)</td><td>Anomalia média</td><td>Fase orbital: dá a posição no tempo e não altera a forma da órbita.</td><td>\([0^\circ,360^\circ)\)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div style="font-size:.6em">
+      <p style="margin-top:0;margin-bottom:.1em"><b>Da anomalia média à posição</b>, com a equação de Kepler:</p>
+      \[ M = n\,(t - t_p),\quad n = \sqrt{\mu/a^3}; \qquad M = E - e\sin E \]
+      \[ \tan\frac{\nu}{2} = \sqrt{\frac{1+e}{1-e}}\,\tan\frac{E}{2} \]
+      <div class="callout" style="font-size:1em">Das seis grandezas, <b>só \(M\) depende do tempo</b>, na aproximação de dois corpos. O MOID depende apenas de \((a,e,i,\Omega,\omega)\). É por isso que \(M\) fica de fora das features.</div>
+    </div>
+  </div>
+  <aside class="notes">Slide de apoio: pode ser pulado se o tempo for curto. μ = GM☉. t_p = instante de passagem pelo periélio. E = anomalia excêntrica.</aside>
 </section>
 
 <section>
@@ -227,6 +303,41 @@
       <p class="tiny" style="margin-top:.4em">Aproximação: a Terra é um círculo de 1 UA na eclíptica. Assim a distância de um ponto à órbita terrestre tem forma fechada, \(\sqrt{(\rho-1)^2+z^2}\), e o MOID sai por minimização em \(\nu\). Experimente mexer em Ω: nessa aproximação ele <b>não altera o MOID</b>.</p>
     </div>
   </div>
+</section>
+
+<section>
+  <div class="kicker">3c · Interativo 3D</div>
+  <h2 style="font-size:1.1em">A órbita no espaço: eclíptica, nós e MOID</h2>
+  <div class="orbit3d-wrap">
+    <div>
+      <svg id="view3D" viewBox="-1 -1 2 2" aria-label="Visualização 3D da órbita do asteroide em relação à órbita da Terra"></svg>
+      <div class="ctrl view-btns">
+        <button data-view="persp">Perspectiva</button>
+        <button data-view="top">De cima (eclíptica)</button>
+        <button data-view="nodes">Ao longo da linha dos nós</button>
+        <button data-view="edge">De perfil</button>
+        <span class="tiny">· arraste para girar</span>
+      </div>
+    </div>
+    <div class="ctrl legend3d">
+      <div class="lg"><svg viewBox="0 0 30 12"><rect x="0" y="1" width="30" height="10" rx="2" fill="#2e8b57" fill-opacity=".12" stroke="#2e8b57" stroke-opacity=".35" stroke-width=".8"/></svg><span><b>Plano da eclíptica</b>: o plano \(xy\) do referencial heliocêntrico, definido pela órbita média da Terra. Os círculos marcam 1, 2, 3… UA, e a seta γ indica o eixo \(\hat x\).</span></div>
+      <div class="lg"><svg viewBox="0 0 30 12"><line x1="0" y1="6" x2="30" y2="6" stroke="#2e8b57" stroke-width="2.4"/></svg><span><b>Órbita da Terra</b>: fica contida na eclíptica (\(i_\oplus = 0\)). Aqui é aproximada por um círculo de 1 UA.</span></div>
+      <div class="lg"><svg viewBox="0 0 30 12"><line x1="0" y1="6" x2="30" y2="6" stroke="#1f5fae" stroke-width="2.4"/></svg><span><b>Órbita do asteroide acima da eclíptica</b> (\(z&gt;0\)), inclinada de \(i\).</span></div>
+      <div class="lg"><svg viewBox="0 0 30 12"><line x1="0" y1="6" x2="30" y2="6" stroke="#1f5fae" stroke-opacity=".55" stroke-width="2" stroke-dasharray="3 2.5"/></svg><span><b>Trecho abaixo da eclíptica</b> (\(z&lt;0\)). As linhas finas cinzas projetam a órbita no plano.</span></div>
+      <div class="lg"><svg viewBox="0 0 30 12"><polygon points="15,1 21,11 9,11" fill="#1f5fae"/></svg><span><b>Nó ascendente ☊</b>: o asteroide cruza a eclíptica subindo. Fica a uma distância \(r_+\) do Sol, no ângulo \(\Omega\) a partir de γ.</span></div>
+      <div class="lg"><svg viewBox="0 0 30 12"><polygon points="9,1 21,1 15,11" fill="#fff" stroke="#1f5fae" stroke-width="1.4"/></svg><span><b>Nó descendente ☋</b>, a uma distância \(r_-\). A linha tracejada entre os dois nós é a <b>linha dos nós</b>. Os nós são os únicos pontos em que as duas órbitas podem se tocar de fato.</span></div>
+      <div class="lg"><svg viewBox="0 0 30 12"><line x1="2" y1="6" x2="28" y2="6" stroke="#b4531a" stroke-width="2.6"/><circle cx="28" cy="6" r="2.6" fill="#b4531a"/></svg><span><b>MOID</b>: o menor segmento entre as duas curvas. Se \(\text{MOID} \le 0{,}05\) UA e \(H \le 22\), o objeto é classificado como PHA.</span></div>
+      <div class="readout" id="readout3d"></div>
+      <div class="presets">Exemplos:
+        <button data-p="1.126,0.204,6.0,2,66,20.2">Bennu</button>
+        <button data-p="0.922,0.191,3.3,204,127,19.1">Apophis</button>
+        <button data-p="1.458,0.223,10.8,304,179,10.4">Eros</button>
+        <button data-p="1.271,0.889,22.3,265,322,14.3">Phaethon</button>
+      </div>
+      <p class="tiny" style="margin:.3em 0 0">Os parâmetros são os mesmos do simulador 3b: mude os sliders lá e esta vista acompanha.</p>
+    </div>
+  </div>
+  <aside class="notes">Mostrar primeiro a vista "ao longo da linha dos nós": nela a inclinação aparece como um ângulo real. Depois voltar à perspectiva e comparar a distância de cada nó ao círculo verde com o segmento laranja do MOID.</aside>
 </section>
 </section>
 
@@ -485,6 +596,128 @@ Reveal.initialize({
   plugins: [ RevealNotes ]
 });
 
+/* ---------- Visão 3D (slide 3c) ---------- */
+(function () {
+  const svg = document.getElementById('view3D');
+  const NS = 'http://www.w3.org/2000/svg';
+  const D2R = Math.PI / 180;
+  const VIEWS = { persp: [-35, 28], top: [0, 90], edge: [0, 0] };
+  let az = -35 * D2R, el = 28 * D2R, last = null;
+
+  const node = (tag, attrs) => {
+    const n = document.createElementNS(NS, tag);
+    for (const k in attrs) n.setAttribute(k, attrs[k]);
+    svg.appendChild(n); return n;
+  };
+  const posAt = (E, nu) => {
+    const r = E.a * (1 - E.e * E.e) / (1 + E.e * Math.cos(nu)), u = E.w + nu;
+    const cO = Math.cos(E.O), sO = Math.sin(E.O), cu = Math.cos(u), su = Math.sin(u), ci = Math.cos(E.i), si = Math.sin(E.i);
+    return [r * (cO * cu - sO * su * ci), r * (sO * cu + cO * su * ci), r * su * si];
+  };
+
+  function render() {
+    const s = render.state; if (!s) return;
+    const { E, res, v, k } = s;
+    svg.innerHTML = '';
+    const R = Math.max(1.35, k.Q * 1.08);
+    const sc = 0.9 / R;
+    // projeção ortográfica: gira em torno de z por az, depois inclina pela elevação el
+    const P = p => {
+      const x1 = p[0] * Math.cos(az) - p[1] * Math.sin(az);
+      const y1 = p[0] * Math.sin(az) + p[1] * Math.cos(az);
+      const up = p[2] * Math.cos(el) + y1 * Math.sin(el);
+      return [x1 * sc, -up * sc];
+    };
+    const path = pts => pts.map((q, n) => (n ? 'L' : 'M') + q[0].toFixed(4) + ' ' + q[1].toFixed(4)).join('');
+    const ring = rad => { const a = []; for (let t = 0; t <= 120; t++) a.push(P([rad * Math.cos(2 * Math.PI * t / 120), rad * Math.sin(2 * Math.PI * t / 120), 0])); return a; };
+    const sw = 0.006;
+
+    // plano da eclíptica + grade em UA
+    node('path', { d: path(ring(R)) + 'Z', fill: '#2e8b57', 'fill-opacity': 0.07, stroke: '#2e8b57', 'stroke-opacity': 0.3, 'stroke-width': sw * 0.8 });
+    for (let g = 2; g < R; g++) node('path', { d: path(ring(g)), fill: 'none', stroke: '#9aa7b8', 'stroke-opacity': 0.45, 'stroke-width': sw * 0.6, 'stroke-dasharray': '0.012 0.012' });
+    // direção do equinócio vernal (eixo x)
+    const g0 = P([0, 0, 0]), gx = P([R, 0, 0]);
+    node('line', { x1: g0[0], y1: g0[1], x2: gx[0], y2: gx[1], stroke: '#9aa7b8', 'stroke-width': sw * 0.8 });
+    const tx = node('text', { x: gx[0] + 0.015, y: gx[1] + 0.012, 'font-size': 0.05, fill: '#5b6676' }); tx.textContent = 'γ';
+
+    // gotas verticais da órbita até o plano
+    for (let d = 0; d < 360; d += 20) {
+      const p = posAt(E, d * D2R), a = P(p), b = P([p[0], p[1], 0]);
+      node('line', { x1: a[0], y1: a[1], x2: b[0], y2: b[1], stroke: '#9aa7b8', 'stroke-opacity': 0.55, 'stroke-width': sw * 0.5 });
+    }
+    // órbita abaixo da eclíptica (tracejada) primeiro
+    const N = 720, pts = [];
+    for (let n = 0; n <= N; n++) pts.push(posAt(E, 2 * Math.PI * n / N));
+    const segs = (above) => {
+      const out = []; let cur = [];
+      pts.forEach(p => { if ((p[2] >= 0) === above) cur.push(P(p)); else if (cur.length) { out.push(cur); cur = []; } });
+      if (cur.length) out.push(cur); return out;
+    };
+    segs(false).forEach(sg => node('path', { d: path(sg), fill: 'none', stroke: '#1f5fae', 'stroke-opacity': 0.55, 'stroke-width': sw * 1.6, 'stroke-dasharray': '0.02 0.016' }));
+    // órbita da Terra
+    node('path', { d: path(ring(1)), fill: 'none', stroke: '#2e8b57', 'stroke-width': sw * 2.2 });
+    // Sol
+    node('circle', { cx: g0[0], cy: g0[1], r: 0.022, fill: '#e0a526' });
+    // linha dos nós
+    const nA = P(posAt(E, -E.w)), nD = P(posAt(E, Math.PI - E.w));
+    node('line', { x1: nA[0], y1: nA[1], x2: nD[0], y2: nD[1], stroke: '#1f5fae', 'stroke-opacity': 0.6, 'stroke-width': sw * 0.8, 'stroke-dasharray': '0.015 0.012' });
+    // órbita acima da eclíptica (sólida)
+    segs(true).forEach(sg => node('path', { d: path(sg), fill: 'none', stroke: '#1f5fae', 'stroke-width': sw * 2.2 }));
+    // periélio
+    const pq = P(posAt(E, 0));
+    node('circle', { cx: pq[0], cy: pq[1], r: 0.013, fill: '#1f5fae' });
+    const tq = node('text', { x: pq[0] + 0.02, y: pq[1] - 0.015, 'font-size': 0.04, fill: '#1f5fae' }); tq.textContent = 'q';
+    // nós
+    const tri = (c, upward, fill) => {
+      const h = 0.028; const pts3 = upward
+        ? [[c[0], c[1] - h], [c[0] + h * 0.9, c[1] + h * 0.7], [c[0] - h * 0.9, c[1] + h * 0.7]]
+        : [[c[0] - h * 0.9, c[1] - h * 0.7], [c[0] + h * 0.9, c[1] - h * 0.7], [c[0], c[1] + h]];
+      node('polygon', { points: pts3.map(p => p.join(',')).join(' '), fill, stroke: '#1f5fae', 'stroke-width': sw });
+    };
+    tri(nA, true, '#1f5fae'); tri(nD, false, '#fff');
+    const la = node('text', { x: nA[0] + 0.03, y: nA[1] + 0.015, 'font-size': 0.045, fill: '#1f5fae' }); la.textContent = '☊';
+    const ld = node('text', { x: nD[0] + 0.03, y: nD[1] + 0.015, 'font-size': 0.045, fill: '#1f5fae' }); ld.textContent = '☋';
+    // MOID
+    const pa = posAt(E, res.nu), rho = Math.hypot(pa[0], pa[1]) || 1;
+    const A = P(pa), B = P([pa[0] / rho, pa[1] / rho, 0]);
+    node('line', { x1: A[0], y1: A[1], x2: B[0], y2: B[1], stroke: '#b4531a', 'stroke-width': sw * 2.6 });
+    node('circle', { cx: A[0], cy: A[1], r: 0.012, fill: '#b4531a' });
+    node('circle', { cx: B[0], cy: B[1], r: 0.012, fill: '#b4531a' });
+    const tm = node('text', { x: (A[0] + B[0]) / 2 + 0.025, y: (A[1] + B[1]) / 2 - 0.02, 'font-size': 0.042, fill: '#b4531a', 'font-weight': 600 }); tm.textContent = 'MOID';
+    // escala
+    const ts = node('text', { x: -0.97, y: 0.96, 'font-size': 0.035, fill: '#5b6676' });
+    ts.textContent = `az ${(az / D2R).toFixed(0)}° · elev ${(el / D2R).toFixed(0)}° · grade: 1 UA`;
+
+    document.getElementById('readout3d').innerHTML =
+      `MOID ≈ <b>${res.d.toFixed(4)} UA</b> · i = ${v.i.toFixed(1)}° · Ω = ${v.O.toFixed(0)}° · ω = ${v.w.toFixed(1)}°<br>` +
+      `☊ r₊ = ${k.rp.toFixed(3)} UA (|r₊−1| = ${Math.abs(k.rp - 1).toFixed(3)}) · ☋ r₋ = ${k.rm.toFixed(3)} UA (|r₋−1| = ${Math.abs(k.rm - 1).toFixed(3)})<br>` +
+      `PHA: <span class="${k.isPHA ? 'pha-yes' : 'pha-no'}">${k.isPHA ? 'SIM' : 'não'}</span>`;
+  }
+
+  window.orbit3D = (E, res, v, k) => { render.state = { E, res, v, k }; render(); };
+
+  svg.addEventListener('pointerdown', e => { last = [e.clientX, e.clientY]; svg.setPointerCapture(e.pointerId); e.stopPropagation(); });
+  svg.addEventListener('pointermove', e => {
+    if (!last) return;
+    az += (e.clientX - last[0]) * 0.008;
+    el = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, el + (e.clientY - last[1]) * 0.008));
+    last = [e.clientX, e.clientY]; render();
+  });
+  const stop = () => { last = null; };
+  svg.addEventListener('pointerup', stop); svg.addEventListener('pointercancel', stop);
+  ['touchstart', 'touchmove'].forEach(t => svg.addEventListener(t, e => e.stopPropagation(), { passive: true }));
+
+  document.querySelectorAll('.view-btns button').forEach(b => b.addEventListener('click', () => {
+    const s = render.state;
+    if (b.dataset.view === 'nodes' && s) {
+      // olhar ao longo da linha dos nós: a inclinação aparece em verdadeira grandeza
+      az = -(s.E.O + Math.PI / 2) + Math.PI; el = 0;
+    } else { const [a, e] = VIEWS[b.dataset.view]; az = a * D2R; el = e * D2R; }
+    document.querySelectorAll('.view-btns button').forEach(x => x.classList.toggle('on', x === b));
+    render();
+  }));
+})();
+
 /* ---------- Simulador orbital ---------- */
 (function () {
   const $ = id => document.getElementById(id);
@@ -580,6 +813,7 @@ Reveal.initialize({
       `D ≈ ${D < 1000 ? D.toFixed(0) + ' m' : (D / 1000).toFixed(1) + ' km'} (p<sub>V</sub>=0,14) · NEO: ${isNEO ? 'sim' : 'não'}<br>` +
       `PHA: <span class="${isPHA ? 'pha-yes' : 'pha-no'}">${isPHA ? 'SIM' : 'não'}</span>` +
       ` <span style="color:var(--muted)">(MOID ≤ 0,05 ∧ H ≤ 22)</span>`;
+    if (window.orbit3D) window.orbit3D(E, res, v, { q, Q, rp, rm, isPHA });
   }
 
   ids.forEach(k => $('s-' + k).addEventListener('input', update));
