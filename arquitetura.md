@@ -222,3 +222,85 @@ Overture/
 - 2 ficam como estão (📄).
 
 Os novos (🆕) são só a base mínima pro nosso escalonamento.
+
+
+## Arquitetura Simplificada
+
+Overture/
+├── README.md                              📄
+├── LICENSE                                📄
+├── .gitignore                             📄
+├── requirements.txt                       📄
+├── astronomical_context.md                📄
+├── apresentacao/
+│   └── slides_ic_asteroides.html          📄
+├── AutogluonModels/                       📄 [ignorado] continua na raiz (a regra do .gitignore já cobre)
+│
+└── src/
+    │
+    ├── comum/                             ── usado pelas duas frentes ──
+    │   ├── __init__.py                    ➡️ de src/data/__init__.py
+    │   ├── config.py                      🔗 src/data/config.py + LABEL "moid_log" (hoje repetido em benchmark.py
+    │   │                                     e tabular_predictor.py)
+    │   ├── dados.py                       🔗 extract.py + load.py + validação de transform.py + get_clean_data() de main.py
+    │   │                                     → "me dê o dataset limpo e validado"
+    │   ├── schema.toml                    ➡️ de src/data/schema.toml
+    │   ├── metricas.py                    🔗 bloco "expm1 → MAE/RMSE/R²" repetido em 5 arquivos
+    │   └── cache/                         [ignorado] ➡️ de src/data/cache/ (o *.parquet do .gitignore já cobre)
+    │
+    ├── legado_so/                         🔒 ── ORIGEM EM SISTEMAS OPERACIONAIS (congelada) ──
+    │   ├── __init__.py                    🆕
+    │   ├── executar.py                    ✂️🔗 __main__ de main.py + filtro a<5, e<0.9 e log1p de transform.py (congelados)
+    │   │                                     → `python -m src.legado_so.executar`
+    │   ├── autogluon/
+    │   │   ├── __init__.py                ➡️ de src/runners/__init__.py
+    │   │   ├── benchmark.py               ✏️ de src/runners/benchmark.py (inteiro; só passa a usar comum/metricas.py)
+    │   │   ├── plot.py                    ✏️ de src/results/plot.py (grava o HTML em resultados/, não na raiz)
+    │   │   └── resultados/
+    │   │       ├── autogluon_comparative_models.csv       ➡️ de src/results/
+    │   │       ├── autogluon_comparative_models.parquet   ➡️ de src/results/
+    │   │       └── benchmark_overture.html                ➡️ da raiz
+    │   └── threading/
+    │       ├── __init__.py                ➡️ de src/testes/models/__init__.py
+    │       ├── modelos.py                 🔗 RFR.py + XGBoost.py + HGBoostR.py (só as fábricas make_model_*)
+    │       └── runner.py                  🔗 sequential_runner.py + threaded_runner.py
+    │                                         + sequential_runner_xgb.py + thread_runner_xgb.py
+    │
+    └── ic/                                🚀 ── INICIAÇÃO CIENTÍFICA (ativa) ──
+        ├── __init__.py                    🆕
+        ├── executar.py                    🆕 ponto de entrada da IC → `python -m src.ic.executar`
+        ├── preparacao.py                  ✂️ filtro de escopo e transformação do alvo de transform.py (parametrizáveis)
+        │                                     + 🆕 features físicas (q, Q, sin/cos, r±, T_J)
+        ├── avaliacao.py                   ✂️ feature_importance de tabular_predictor.py
+        │                                     + 🆕 baseline max(q−1, 0) e métricas por região de MOID
+        ├── profile_report.py              ✏️ de src/data/report/ (corrige o import quebrado)
+        └── profile_report.html            ➡️ de src/data/report/ (gerado)
+
+
+### O que some do repositório
+
+```text
+src/main.py                                  → comum/dados.py (get_clean_data) + legado_so/executar.py (execução)
+src/data/  (pasta)                           → comum/  (transform.py é dividido entre comum, legado_so e ic)
+src/runners/  (pasta)                        → legado_so/autogluon/
+src/runners/auto_gluon/tabular_predictor.py  → absorvido: métricas → comum/metricas.py; importância → ic/avaliacao.py
+src/results/  (pasta)                        → legado_so/autogluon/ (plot.py + resultados/)
+src/testes/  (pasta)                         → legado_so/threading/
+benchmark_overture.html  (raiz)              → legado_so/autogluon/resultados/
+```
+
+### O que foi simplificado em relação à proposta anterior
+
+| Proposta anterior | Esta versão | Por quê |
+|---|---|---|
+| `core/` com 3 subpacotes (`config/`, `data/`, `evaluation/`) e 7 arquivos | `comum/` plano com 4 arquivos | Subpacotes para 4 arquivos é cerimônia sem ganho |
+| `paths.py` + `dataset.py` separados | Um `config.py` | ~20 linhas no total |
+| `validate.py` + `pipeline.py` + `extract.py` + `load.py` | Um `dados.py` | Uma ideia, um arquivo |
+| `benchmark.py` + `report.py` no legado | Um `benchmark.py`, inteiro | O legado está congelado. Refatorar código que não vai mudar é custo sem retorno |
+| `legado_so/scope.py` + `__main__.py` | Um `executar.py` | O escopo congelado só existe para rodar o benchmark. Ficam juntos |
+| `ic/scope.py` + `target.py` + `features.py` | Um `preparacao.py` | Na base da IC, os três são poucas funções. Separe quando crescerem |
+| `ic/baselines.py` + `evaluation.py` | Um `avaliacao.py` | Baseline só existe para ser comparado. Mesmo lugar da comparação |
+| `ic/eda/` | `ic/profile_report.py` direto | Uma pasta para um arquivo não se justifica |
+| `artifacts/` | Não criada | Exigiria alterar o `.gitignore`. O cache e o `AutogluonModels/` já são ignorados onde estão |
+| `docs/`, README dividido, `requirements-legado-so.txt` | Nada muda | Restrição: arquivos básicos intocados |
+| `tests/` | Adiado | Entra quando a IC tiver a primeira função estável para testar |
