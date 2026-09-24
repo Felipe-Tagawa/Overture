@@ -1,12 +1,14 @@
 from pathlib import Path
+from typing import Union
 
 import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-from src.data.config import RESULTS_PATH
+from src.comum.config import RESULTS_PATH
 
 CSV_PATH = RESULTS_PATH / "autogluon_comparative_models.csv"
+HTML_PATH = RESULTS_PATH / "benchmark_overture.html"
 
 COR_SEQ = "#4CA863"
 COR_PAR = "#F56918"
@@ -24,6 +26,7 @@ COR_MELHOR_LINHA = "#d1fae5"
 
 COLUNAS_TABELA = ["model", "score_test", "score_val", "pred_time_test", "fit_time_marginal", "fit_order"]
 LABELS_TABELA = ["Modelo", "Score (test)", "Score (val)", "Pred. time (s)", "Fit time (s)", "Ordem"]
+
 
 def carregar_dados(csv_path: Path = CSV_PATH) -> pd.DataFrame:
     """Lê o CSV do benchmark e prepara colunas auxiliares."""
@@ -172,35 +175,36 @@ def grafico_benchmark_final(df: pd.DataFrame) -> go.Figure:
     )
     return fig
 
+
 def grafico_tabela_leaderboard(df: pd.DataFrame) -> go.Figure:
     """Gera uma tabela por estratégia (sequential/parallel), lado a lado,
     destacando o melhor modelo (menor score_test) de cada uma."""
 
     estrategias = _estrategias_presentes(df)
- 
+
     fig = make_subplots(
         rows=1, cols=len(estrategias),
         specs=[[{"type": "table"}] * len(estrategias)],
         subplot_titles=[f"Leaderboard — {NOMES_ESTRATEGIA.get(e, e)}" for e in estrategias],
         horizontal_spacing=0.03,
     )
- 
+
     max_linhas = 0
- 
+
     for col_idx, estrategia in enumerate(estrategias, start=1):
         subset = df[df["fit_strategy"] == estrategia].copy()
         subset["score_test_abs"] = subset["score_test"].abs()
         subset = subset.sort_values("score_test_abs").reset_index(drop=True)
         max_linhas = max(max_linhas, len(subset))
- 
+
         melhor_pos = subset["score_test_abs"].idxmin()
- 
+
         cores_linha = [
             COR_MELHOR_LINHA if pos == melhor_pos
             else (COR_LINHA_PAR if pos % 2 == 0 else COR_LINHA_IMPAR)
             for pos in subset.index
         ]
- 
+
         valores = [
             subset["model"].tolist(),
             [f"{v:.5f}" for v in subset["score_test"]],
@@ -209,7 +213,7 @@ def grafico_tabela_leaderboard(df: pd.DataFrame) -> go.Figure:
             [f"{v:.2f}" for v in subset["fit_time_marginal"]],
             subset["fit_order"].astype(int).astype(str).tolist(),
         ]
- 
+
         fig.add_trace(go.Table(
             header=dict(
                 values=LABELS_TABELA,
@@ -223,17 +227,18 @@ def grafico_tabela_leaderboard(df: pd.DataFrame) -> go.Figure:
                 fill_color=[cores_linha] * len(COLUNAS_TABELA),
                 align="center",
                 height=28,
-                font=dict(size=11),                
+                font=dict(size=11),
             ),
         ), row=1, col=col_idx)
- 
+
     fig.update_layout(
         title="Comparação detalhada dos modelos (AutoGluon)",
         template="plotly_white",
-        height=max(300, 190 + 32 * (max_linhas + 1)), 
+        height=max(300, 190 + 32 * (max_linhas + 1)),
         width=900 + 900 * (len(estrategias) - 1),
     )
     return fig
+
 
 def grafico_evolucao_time_limit(df: pd.DataFrame) -> go.Figure:
     """Mostra como o tempo total e o MAE do ensemble evoluem conforme o time_limit aumenta,
@@ -292,14 +297,17 @@ def grafico_evolucao_time_limit(df: pd.DataFrame) -> go.Figure:
     return fig
 
 
-def gerar_html(csv_path: Path = CSV_PATH, caminho_saida: str = "benchmark_overture.html") -> None:
-    """Lê o CSV do benchmark e monta o HTML: um resumo geral por time_limit,
+def gerar_html(csv_path: Path = CSV_PATH, caminho_saida: Union[Path, str] = HTML_PATH) -> None:
+    """Lê o CSV do benchmark e monta o HTML gravando em resultados/: um resumo geral por time_limit,
     seguido do detalhamento (RMSE, tempo, trade-off, leaderboard) para cada time_limit."""
     df = carregar_dados(csv_path)
 
     time_limits = sorted(df["time_limit"].unique()) if "time_limit" in df.columns else [None]
 
-    with open(caminho_saida, "w", encoding="utf-8") as f:
+    saida = Path(caminho_saida)
+    saida.parent.mkdir(parents=True, exist_ok=True)
+
+    with open(saida, "w", encoding="utf-8") as f:
         f.write("<html><head><meta charset='utf-8'>")
         f.write("<title>Benchmark Overture - Sequencial vs Paralelo</title></head><body>")
         f.write("<h1 style='font-family:sans-serif; text-align:center;'>Benchmark: AutoGluon Sequencial vs Paralelo</h1>")
@@ -332,7 +340,7 @@ def gerar_html(csv_path: Path = CSV_PATH, caminho_saida: str = "benchmark_overtu
 
         f.write("</body></html>")
 
-    print(f"HTML gerado em: {caminho_saida}")
+    print(f"HTML gerado em: {saida}")
 
 
 if __name__ == "__main__":

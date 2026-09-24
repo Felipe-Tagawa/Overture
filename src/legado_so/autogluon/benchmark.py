@@ -21,16 +21,13 @@
 # queremos medir já acontece DENTRO de cada chamada de fit(), não entre
 # chamadas.
 import time
-import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from autogluon.tabular import TabularPredictor
 
+from src.comum.config import FEATURES, TARGET, LABEL, RESULTS_PATH
+from src.comum.metricas import regression_report
 
-from src.data.config import FEATURES, TARGET, RESULTS_PATH
-
-LABEL = "moid_log"
 
 def make_predictor_autogluon(path: str) -> TabularPredictor:
     return TabularPredictor(
@@ -80,11 +77,11 @@ def train_and_evaluate(
 
     for model_name in df_leaderboard["model"]:
         y_pred_log = predictor.predict(test_data[FEATURES + [LABEL]], model=model_name)
-        y_pred = np.expm1(y_pred_log)
+        metrics = regression_report(y_orig_test, y_pred_log)
 
-        mae_per_model.append(mean_absolute_error(y_orig_test, y_pred))
-        rmse_per_model.append(np.sqrt(mean_squared_error(y_orig_test, y_pred)))
-        r2_per_model.append(r2_score(y_orig_test, y_pred))
+        mae_per_model.append(metrics["mae"])
+        rmse_per_model.append(metrics["rmse"])
+        r2_per_model.append(metrics["r2"])
 
     df_leaderboard["test_mae"] = mae_per_model
     df_leaderboard["test_rmse"] = rmse_per_model
@@ -103,6 +100,7 @@ def train_and_evaluate(
     ].iloc[0]
 
     return df_leaderboard
+
 
 def print_detailed_models(df_result: pd.DataFrame, strategy: str, time_limit: int = None):
     subset = df_result[df_result["fit_strategy"] == strategy]
@@ -179,7 +177,7 @@ def run_benchmark(df: pd.DataFrame, time_limits: list[int] = [25, 50, 100]) -> p
     parquet_out = RESULTS_PATH / "autogluon_comparative_models.parquet"
     df_result.to_csv(csv_out, index=False)
     df_result.to_parquet(parquet_out, index=False)
-    #print(f"\nArquivos salvos em: {RESULTS_PATH}")
+    print(f"\nArquivos salvos em: {RESULTS_PATH}")
 
     print_benchmark_summary(df_result, time_limits)
 
